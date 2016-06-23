@@ -34,34 +34,6 @@ fi
 # Load configuration
 . "$CONFIG"
 
-# Domain and token from arguments
-domain="${2}"
-token="${4}"
-
-# Create the zone name from the arguments
-IFS='.' read -a domain_array <<< "$domain"
-zone="${domain_array[*]: -2:1}.${domain_array[*]: -1:1}"
-
-# Record name
-name="_acme-challenge.$domain"
-
-# URL to post to
-url="/servers/$SERVER/zones/$zone"
-
-# Header with the api key
-headers="X-API-Key: $KEY"
-
-# Some version incompatibilities
-if [[ $VERSION -ge 1 ]]; then
-  name="$name."
-  url="/api/v${VERSION}${url}"
-else
-  extra_data=",\"name\": \"${name}\", \"type\": \"TXT\", \"ttl\": 1"
-fi
-
-# Add the host and port to the url
-url="http://${HOST}:${PORT}${url}"
-
 ## Functions
 # API request
 request () {
@@ -84,10 +56,37 @@ request () {
   fi
 }
 
-## Actions
+setup() {
+  # Domain and token from arguments
+  domain="${1}"
+  token="${2}"
 
-# Deploy a token
-if [[ "$1" = "deploy_challenge" ]]; then
+  # Create the zone name from the arguments
+  IFS='.' read -a domain_array <<< "$domain"
+  zone="${domain_array[*]: -2:1}.${domain_array[*]: -1:1}"
+
+  # Record name
+  name="_acme-challenge.$domain"
+
+  # URL to post to
+  url="/servers/$SERVER/zones/$zone"
+
+  # Header with the api key
+  headers="X-API-Key: $KEY"
+
+  # Some version incompatibilities
+  if [[ $VERSION -ge 1 ]]; then
+    name="$name."
+    url="/api/v${VERSION}${url}"
+  else
+    extra_data=",\"name\": \"${name}\", \"type\": \"TXT\", \"ttl\": 1"
+  fi
+
+  # Add the host and port to the url
+  url="http://${HOST}:${PORT}${url}"
+}
+
+deploy() {
   # Create the JSON string
   data='{
     "rrsets": [{
@@ -106,22 +105,47 @@ if [[ "$1" = "deploy_challenge" ]]; then
 
   # Do the request
   request
+}
 
-  # Wait the requested amount of seconds
-  if [[ ! -z "$WAIT" ]]; then
-    sleep "$WAIT"
-  fi
-fi
-
-# Remove a token
-if [[ "$1" = "clean_challenge" ]]; then
+clean() {
   # Create the JSON string
   data='{"rrsets":[{"name":"'${name}'","type":"TXT","changetype":"DELETE"}]}'
 
   # Do the request
   request
-fi
+}
 
-# Other actions are not implemented but will not cause an error
+# Loop through arguments per 3
+for ((i=2; i<=$#; i=i+3)); do
+  t=$(($i + 2))
+  setup "${!i}" "${!t}"
+
+  # Debug output
+  if [[ "$DEBUG" ]]; then
+    echo "Name:  $name"
+    echo "Token: $token"
+  fi
+
+  # Deploy a token
+  if [[ "$1" = "deploy_challenge" ]]; then
+    deploy
+  fi
+
+  # Remove a token
+  if [[ "$1" = "clean_challenge" ]]; then
+    clean
+  fi
+
+  # Other actions are not implemented but will not cause an error
+done
+
+# Wait the requested amount of seconds when deployed
+if [[ "$1" = "deploy_challenge" ]] && [[ ! -z "$WAIT" ]]; then
+  if [[ "$DEBUG" ]]; then
+    echo "Waiting for $WAIT seconds"
+  fi
+
+  sleep "$WAIT"
+fi
 
 exit 0

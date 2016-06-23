@@ -20,8 +20,7 @@ Configure it as a DNS hook, by adding the following to your `letsencrypt.sh` con
 ```sh
 CHALLENGETYPE="dns-01"
 HOOK="./pdns_api.sh"
+HOOK_CHAIN="yes"
 ```
-
-`HOOK_CHAIN` is not supported at this time.
 
 [le.sh]: https://github.com/lukas2511/letsencrypt.sh
