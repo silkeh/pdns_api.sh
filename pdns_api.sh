@@ -106,6 +106,11 @@ if [[ "$1" = "deploy_challenge" ]]; then
 
   # Do the request
   request
+
+  # Wait the requested amount of seconds
+  if [[ ! -z "$WAIT" ]]; then
+    sleep "$WAIT"
+  fi
 fi
 
 # Remove a token
