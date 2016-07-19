@@ -43,8 +43,10 @@ fi
 # Load configuration
 . "$CONFIG"
 
-# Load domains
-all_zones="$(cat $ZONES_TXT)"
+# Load zones
+if [[ -f $ZONES_TXT ]]; then
+  all_zones="$(cat $ZONES_TXT)"
+fi
 
 ## Functions
 
@@ -78,10 +80,11 @@ setup() {
   domain="${1}"
   token="${2}"
 
-  # Find zone name, assuming:
-  # - subdomains are listed first
-  # - subdomains are zones in PowerDNS
   IFS='.' read -a domain_array <<< "$domain"
+
+  # Find zone name, assuming:
+  # - deeper zones are listed first
+  # - zones are present in PowerDNS
   for check_zone in $all_zones; do
     if [[ "$check_zone" = "$domain" ||
           "$check_zone" = "$(join . ${domain_array[@]:1})" ]]; then
