@@ -31,10 +31,26 @@ if [[ -z "${CONFIG:-}" ]]; then
   done
 fi
 
+if [[ -z "${ZONES_TXT:-}" ]]; then
+  for check_zones in "/etc/letsencrypt.sh" "/usr/local/etc/letsencrypt.sh" "${PWD}" "${DIR}"; do
+    if [[ -f "${check_zones}/zones.txt" ]]; then
+      ZONES_TXT="${check_zones}/zones.txt"
+      break
+    fi
+  done
+fi
+
 # Load configuration
 . "$CONFIG"
 
+# Load domains
+all_zones="$(cat $ZONES_TXT)"
+
 ## Functions
+
+# Utility
+function join { local IFS="$1"; shift; echo "$*"; }
+
 # API request
 request () {
   # Do the request
@@ -42,6 +58,7 @@ request () {
 
   # Debug output
   if [[ "$DEBUG" ]]; then
+    echo "URL: $url"
     echo "Data: $data"
     echo "Response: $res"
   fi
@@ -61,9 +78,22 @@ setup() {
   domain="${1}"
   token="${2}"
 
-  # Create the zone name from the arguments
+  # Find zone name, assuming:
+  # - subdomains are listed first
+  # - subdomains are zones in PowerDNS
   IFS='.' read -a domain_array <<< "$domain"
-  zone="${domain_array[*]: -2:1}.${domain_array[*]: -1:1}"
+  for check_zone in $all_zones; do
+    if [[ "$check_zone" = "$domain" ||
+          "$check_zone" = "$(join . ${domain_array[@]:1})" ]]; then
+      zone=$check_zone
+      break
+    fi
+  done
+
+  if [[ "$zone" = "" ]]; then
+    # Fallback to creating zone from arguments
+    zone="${domain_array[*]: -2:1}.${domain_array[*]: -1:1}"
+  fi
 
   # Record name
   name="_acme-challenge.$domain"
@@ -120,19 +150,22 @@ for ((i=2; i<=$#; i=i+3)); do
   t=$(($i + 2))
   setup "${!i}" "${!t}"
 
+  hook=$1
+
   # Debug output
   if [[ "$DEBUG" ]]; then
+    echo "Hook: $hook"
     echo "Name:  $name"
     echo "Token: $token"
   fi
 
   # Deploy a token
-  if [[ "$1" = "deploy_challenge" ]]; then
+  if [[ "$hook" = "deploy_challenge" ]]; then
     deploy
   fi
 
   # Remove a token
-  if [[ "$1" = "clean_challenge" ]]; then
+  if [[ "$hook" = "clean_challenge" ]]; then
     clean
   fi
 
@@ -140,7 +173,7 @@ for ((i=2; i<=$#; i=i+3)); do
 done
 
 # Wait the requested amount of seconds when deployed
-if [[ "$1" = "deploy_challenge" ]] && [[ ! -z "$WAIT" ]]; then
+if [[ "$hook" = "deploy_challenge" ]] && [[ ! -z "$WAIT" ]]; then
   if [[ "$DEBUG" ]]; then
     echo "Waiting for $WAIT seconds"
   fi
