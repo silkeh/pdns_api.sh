@@ -82,15 +82,17 @@ setup() {
 
   IFS='.' read -a domain_array <<< "$domain"
 
-  # Find zone name, assuming:
+  # Find zone name, cut off subdomains until match
+  # Assumptions:
   # - deeper zones are listed first
   # - zones are present in PowerDNS
   for check_zone in $all_zones; do
-    if [[ "$check_zone" = "$domain" ||
-          "$check_zone" = "$(join . ${domain_array[@]:1})" ]]; then
-      zone=$check_zone
-      break
-    fi
+    for (( j=${#domain_array[@]}-1; j>=0; j-- )); do
+      if [[ "$check_zone" = "$(join . ${domain_array[@]:j})" ]]; then
+        zone=$check_zone
+        break 2
+      fi
+    done
   done
 
   if [[ "$zone" = "" ]]; then
