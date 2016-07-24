@@ -23,4 +23,12 @@ HOOK="./pdns_api.sh"
 HOOK_CHAIN="yes"
 ```
 
+Subdomains are supported. If you use separate zones on the same server, create a file called `zones.txt` in `/etc/letsencrypt.sh/`, `/usr/local/etc/letsencrypt.sh/` or next to `pdns_api.sh`. Put your PowerDNS zones in order deeper before shorter in it like this:
+
+```
+test.example.domain.tld
+example.domain.tld
+test.domain.tld
+```
+
 [le.sh]: https://github.com/lukas2511/letsencrypt.sh
