@@ -64,6 +64,21 @@ _sed() {
   fi
 }
 
+# Get string value from json dictionary
+# From letsencrypt.sh
+get_json_string_value() {
+  local filter
+  filter=$(printf 's/.*"%s": *"([^"]*)".*/\\1/p' "$1")
+  _sed -n "${filter}"
+}
+
+# Get integer value from json dictionary
+get_json_int_value() {
+  local filter
+  filter=$(printf 's/.*"%s": *([^,}]*),*.*/\\1/p' "$1")
+  _sed -n "${filter}"
+}
+
 # API request
 request() {
   # Request parameters
@@ -87,7 +102,7 @@ request() {
   if [[ $res_code -gt 0 ]]; then
     >&2 echo "Request to API failed."
     exit 1
-  elif [[ $res = *"error"* ]]; then
+  elif [[ $res = *"error"* ]] || [[ $res = "Not Found" ]]; then
     >&2 echo "API error: $res"
     exit 1
   fi
@@ -95,25 +110,39 @@ request() {
 
 # Setup of connection settings
 setup() {
-  # Zone endpoint on the API
-  url="/servers/$SERVER/zones"
-
   # Header with the api key
   headers="X-API-Key: $KEY"
-
-  # Some version incompatibilities
-  if [[ $VERSION -ge 1 ]]; then
-    url="/api/v${VERSION}${url}"
-  fi
 
   # Add the host and port to the url
   url="http://${HOST}:${PORT}${url}"
 
+  # Detect the version
+  if [[ -z "${VERSION:-}" ]]; then
+    request "GET" "${url}/api" ""
+    VERSION=$(<<< "$res" get_json_int_value version)
+  fi
+
+  # Fallback to version 0
+  if [[ "$VERSION" = "" ]]; then
+    VERSION="0"
+  fi
+
+  # Some version incompatibilities
+  if [[ $VERSION -ge 1 ]]; then
+    url="${url}/api/v${VERSION}"
+  fi
+
+  # Zone endpoint on the API
+  url="${url}/servers/${SERVER}/zones"
+
   # Get a zone list from the API is none was set
   if [[ "$all_zones" = "" ]]; then
     request "GET" "${url}" ""
-    all_zones=$(<<< "${res}" grep -o 'id":[^,]*,' | _sed -e 's/id": "|\.?",//g')
+    all_zones=$(<<< "${res//, /$',\n'}" get_json_string_value id)
   fi
+
+  # Strip trailing dots from zones
+  all_zones="${all_zones//$'.\n'/ }"
 
   # Sort zones to list most specific first
   all_zones=$(sort -r <<< "$all_zones")
@@ -191,8 +220,19 @@ setup
 # Set hook
 hook="${1}"
 
+# Deployment of a certificate
+if [[ "$hook" = "deploy_cert" ]]; then
+  exit 0
+fi
+
+# Unchanged certificate
+if [[ "$hook" = "unchanged_cert" ]]; then
+  exit 0
+fi
+
 # Loop through arguments per 3
 for ((i=2; i<=$#; i=i+3)); do
+  # Setup for this domain
   t=$(($i + 2))
   setup_domain "${!i}" "${!t}"
 
