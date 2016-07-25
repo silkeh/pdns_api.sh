@@ -17,8 +17,12 @@
 # permissions and limitations under the Licence.
 #
 
+set -e
+set -u
+set -o pipefail
+
 # Local directory
-DIR="$(dirname "${0}")"
+DIR="$(dirname "$0")"
 
 # Check for config in various locations
 # From letsencrypt.sh
@@ -42,22 +46,27 @@ if [[ -z "${ZONES_TXT:-}" ]]; then
 fi
 
 # Load configuration
-. "$CONFIG"
+. "${CONFIG}"
 
 # Load zones
-if [[ -f $ZONES_TXT ]]; then
-  all_zones="$(cat $ZONES_TXT)"
+if [[ -f "${ZONES_TXT}" ]]; then
+  all_zones="$(cat "${ZONES_TXT}")"
 fi
 
 ## Functions
 
+# Show an error/warning
+err() { echo "Error: $@" >&2; }
+warn() { echo "Warning: $@" >&2; }
+
 # Join an array with a character
-join() { local IFS="${1}"; shift; echo "$*"; }
+join() { local IFS="$1"; shift; echo "$*"; }
 
 # Reverse a string
 rev() {
   local str rev
-  str=$(cat)
+  str="$(cat)"
+  rev=""
   for (( i=${#str}-1; i>=0; i-- )); do rev="${rev}${str:$i:1}"; done
   echo "${rev}"
 }
@@ -76,42 +85,39 @@ _sed() {
 # From letsencrypt.sh
 get_json_string_value() {
   local filter
-  filter=$(printf 's/.*"%s": *"([^"]*)".*/\\1/p' "$1")
+  filter="$(printf 's/.*"%s": *"([^"]*)".*/\\1/p' "$1")"
   _sed -n "${filter}"
 }
 
 # Get integer value from json dictionary
 get_json_int_value() {
   local filter
-  filter=$(printf 's/.*"%s": *([^,}]*),*.*/\\1/p' "$1")
+  filter="$(printf 's/.*"%s": *([^,}]*),*.*/\\1/p' "$1")"
   _sed -n "${filter}"
 }
 
 # API request
 request() {
   # Request parameters
-  req_method="${1}"
-  req_url="${2}"
-  req_data="${3}"
+  local method url data
+  method="$1"
+  url="$2"
+  data="$3"
 
   # Do the request
-  res=$(curl -sS --request "$req_method" --header "$headers" --data "$req_data" "$req_url")
-  res_code=$?
+  res="$(curl -sS --request "${method}" --header "${headers}" --data "${data}" "${url}")"
 
   # Debug output
-  if [[ "$DEBUG" ]]; then
-    echo "Method: $req_method"
-    echo "URL: $req_url"
-    echo "Data: $req_data"
-    echo "Response: $res"
+  if [[ "${DEBUG}" ]]; then
+    echo "Method: ${method}"
+    echo "URL: ${url}"
+    echo "Data: ${data}"
+    echo "Response: ${res}"
   fi
 
   # Abort on failed request
-  if [[ $res_code -gt 0 ]]; then
-    >&2 echo "Request to API failed."
-    exit 1
-  elif [[ $res = *"error"* ]] || [[ $res = "Not Found" ]]; then
-    >&2 echo "API error: $res"
+  if [[ "${res}" = *"error"* ]] || [[ "${res}" = "Not Found" ]]; then
+    err "API error: ${res}"
     exit 1
   fi
 }
@@ -119,40 +125,40 @@ request() {
 # Setup of connection settings
 setup() {
   # Header with the api key
-  headers="X-API-Key: $KEY"
+  headers="X-API-Key: ${KEY}"
 
   # Default port
   if [[ -z "${PORT:-}" ]]; then
-    PORT="8081"
+    PORT=8081
   fi
 
   # Add the host and port to the url
-  url="http://${HOST}:${PORT}${url}"
+  url="http://${HOST}:${PORT}"
 
   # Detect the version
   if [[ -z "${VERSION:-}" ]]; then
     request "GET" "${url}/api" ""
-    VERSION=$(<<< "$res" get_json_int_value version)
+    VERSION="$(<<< "${res}" get_json_int_value version)"
   fi
 
   # Fallback to version 0
-  if [[ "$VERSION" = "" ]]; then
-    VERSION="0"
+  if [[ -z "${VERSION}" ]]; then
+    VERSION=0
   fi
 
   # Some version incompatibilities
-  if [[ $VERSION -ge 1 ]]; then
+  if [[ "${VERSION}" -ge 1 ]]; then
     url="${url}/api/v${VERSION}"
   fi
 
   # Detect the server
   if [[ -z "${SERVER:-}" ]]; then
     request "GET" "${url}/servers" ""
-    SERVER=$(<<< "$res" get_json_string_value id)
+    SERVER="$(<<< "${res}" get_json_string_value id)"
   fi
 
   # Fallback to localhost
-  if [[ "$SERVER" = "" ]]; then
+  if [[ -z "${SERVER}" ]]; then
     SERVER="localhost"
   fi
 
@@ -160,50 +166,51 @@ setup() {
   url="${url}/servers/${SERVER}/zones"
 
   # Get a zone list from the API is none was set
-  if [[ "$all_zones" = "" ]]; then
+  if [[ -z "${all_zones}" ]]; then
     request "GET" "${url}" ""
-    all_zones=$(<<< "${res//, /$',\n'}" get_json_string_value id)
+    all_zones="$(<<< "${res//, /$',\n'}" get_json_string_value id)"
   fi
 
   # Strip trailing dots from zones
   all_zones="${all_zones//$'.\n'/ }"
 
   # Sort zones to list most specific first
-  all_zones=$(rev <<< "$all_zones" | sort | rev)
+  all_zones="$(<<< "${all_zones}" rev | sort | rev)"
 }
 
 setup_domain() {
   # Domain and token from arguments
-  domain="${1}"
-  token="${2}"
+  domain="$1"
+  token="$2"
   zone=""
 
   # Read domain parts into array
-  IFS='.' read -a domain_array <<< "$domain"
+  IFS='.' read -a domain_array <<< "${domain}"
 
   # Find zone name, cut off subdomains until match
-  for check_zone in $all_zones; do
+  for check_zone in ${all_zones}; do
     for (( j=${#domain_array[@]}-1; j>=0; j-- )); do
-      if [[ "$check_zone" = "$(join . ${domain_array[@]:j})" ]]; then
-        zone=$check_zone
+      if [[ "${check_zone}" = "$(join . ${domain_array[@]:j})" ]]; then
+        zone="${check_zone}"
         break 2
       fi
     done
   done
 
   # Fallback to creating zone from arguments
-  if [[ "$zone" = "" ]]; then
+  if [[ -z "${zone}" ]]; then
     zone="${domain_array[*]: -2:1}.${domain_array[*]: -1:1}"
-    >&2 echo "Warning: zone not found, using '$zone'"
+    warn "zone not found, using '${zone}'"
   fi
 
   # Record name
-  name="_acme-challenge.$domain"
+  name="_acme-challenge.${domain}"
 
   # Some version incompatibilities
-  if [[ $VERSION -ge 1 ]]; then
-    name="$name."
-    zone="$zone."
+  if [[ "${VERSION}" -ge 1 ]]; then
+    name="${name}."
+    zone="${zone}."
+    extra_data=""
   else
     extra_data=",\"name\": \"${name}\", \"type\": \"TXT\", \"ttl\": 1"
   fi
@@ -220,14 +227,14 @@ deploy() {
         "content": "\"'${token}'\"",
         "disabled": false,
         "set-ptr": false
-        '${extra_data}'
+        '"${extra_data}"'
       }],
       "changetype": "REPLACE"
     }]
   }'
 
   # Do the request
-  request "PATCH" "${url}/${zone}" "$data"
+  request "PATCH" "${url}/${zone}" "${data}"
 }
 
 clean() {
@@ -235,22 +242,22 @@ clean() {
   data='{"rrsets":[{"name":"'${name}'","type":"TXT","changetype":"DELETE"}]}'
 
   # Do the request
-  request "PATCH" "${url}/${zone}" "$data"
+  request PATCH "${url}/${zone}" "${data}"
 }
 
 # Main setup
 setup
 
 # Set hook
-hook="${1}"
+hook="$1"
 
 # Deployment of a certificate
-if [[ "$hook" = "deploy_cert" ]]; then
+if [[ "${hook}" = "deploy_cert" ]]; then
   exit 0
 fi
 
 # Unchanged certificate
-if [[ "$hook" = "unchanged_cert" ]]; then
+if [[ "${hook}" = "unchanged_cert" ]]; then
   exit 0
 fi
 
@@ -261,20 +268,20 @@ for ((i=2; i<=$#; i=i+3)); do
   setup_domain "${!i}" "${!t}"
 
   # Debug output
-  if [[ "$DEBUG" ]]; then
-    echo "Hook:  $hook"
-    echo "Name:  $name"
-    echo "Token: $token"
-    echo "Zone:  $zone"
+  if [[ "${DEBUG}" ]]; then
+    echo "Hook:  ${hook}"
+    echo "Name:  ${name}"
+    echo "Token: ${token}"
+    echo "Zone:  ${zone}"
   fi
 
   # Deploy a token
-  if [[ "$hook" = "deploy_challenge" ]]; then
+  if [[ "${hook}" = "deploy_challenge" ]]; then
     deploy
   fi
 
   # Remove a token
-  if [[ "$hook" = "clean_challenge" ]]; then
+  if [[ "${hook}" = "clean_challenge" ]]; then
     clean
   fi
 
@@ -282,12 +289,12 @@ for ((i=2; i<=$#; i=i+3)); do
 done
 
 # Wait the requested amount of seconds when deployed
-if [[ "$hook" = "deploy_challenge" ]] && [[ ! -z "$WAIT" ]]; then
-  if [[ "$DEBUG" ]]; then
-    echo "Waiting for $WAIT seconds"
+if [[ "${hook}" = "deploy_challenge" ]] && [[ -n "${WAIT}" ]]; then
+  if [[ "${DEBUG}" ]]; then
+    echo "Waiting for ${WAIT} seconds"
   fi
 
-  sleep "$WAIT"
+  sleep "${WAIT}"
 fi
 
 exit 0
