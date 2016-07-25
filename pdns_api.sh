@@ -31,6 +31,7 @@ if [[ -z "${CONFIG:-}" ]]; then
   done
 fi
 
+# Check for zones.txt in various locations
 if [[ -z "${ZONES_TXT:-}" ]]; then
   for check_zones in "/etc/letsencrypt.sh" "/usr/local/etc/letsencrypt.sh" "${PWD}" "${DIR}"; do
     if [[ -f "${check_zones}/zones.txt" ]]; then
@@ -53,24 +54,41 @@ fi
 # Utility
 function join { local IFS="$1"; shift; echo "$*"; }
 
+# Different sed version for different os types...
+# From letsencrypt.sh
+_sed() {
+  if [[ "${OSTYPE}" = "Linux" ]]; then
+    sed -r "${@}"
+  else
+    sed -E "${@}"
+  fi
+}
+
 # API request
-request () {
+request() {
+  # Request parameters
+  req_method="$1"
+  req_url="$2"
+  req_data="$3"
+
   # Do the request
-  res=$(curl -sS --request PATCH --header "$headers" --data "$data" "$url")
+  res=$(curl -sS --request "$req_method" --header "$headers" --data "$req_data" "$req_url")
+  res_code=$?
 
   # Debug output
   if [[ "$DEBUG" ]]; then
-    echo "URL: $url"
-    echo "Data: $data"
+    echo "Method: $req_method"
+    echo "URL: $req_url"
+    echo "Data: $req_data"
     echo "Response: $res"
   fi
 
   # Abort on failed request
-  if [[ "$?" -gt 0 ]]; then
-    echo "Request to API failed."
+  if [[ $res_code -gt 0 ]]; then
+    >&2 echo "Request to API failed."
     exit 1
   elif [[ $res = *"error"* ]]; then
-    echo "API error: $res"
+    >&2 echo "API error: $res"
     exit 1
   fi
 }
@@ -79,13 +97,20 @@ setup() {
   # Domain and token from arguments
   domain="${1}"
   token="${2}"
+  zone=""
 
   IFS='.' read -a domain_array <<< "$domain"
 
+  # Get a zone list from the API is none was set
+  if [[ "$all_zones" = "" ]]; then
+    request "GET" "${url}" ""
+    all_zones=$(<<< "${res}" grep -o 'id":[^,]*,' | _sed -e 's/id": "|\.?",//g')
+  fi
+
+  # Sort zones to list most specific first
+  all_zones=$(sort -r <<< "$all_zones")
+
   # Find zone name, cut off subdomains until match
-  # Assumptions:
-  # - deeper zones are listed first
-  # - zones are present in PowerDNS
   for check_zone in $all_zones; do
     for (( j=${#domain_array[@]}-1; j>=0; j-- )); do
       if [[ "$check_zone" = "$(join . ${domain_array[@]:j})" ]]; then
@@ -95,16 +120,17 @@ setup() {
     done
   done
 
+  # Fallback to creating zone from arguments
   if [[ "$zone" = "" ]]; then
-    # Fallback to creating zone from arguments
     zone="${domain_array[*]: -2:1}.${domain_array[*]: -1:1}"
+    >&2 echo "Warning: zone not found, using '$zone'"
   fi
 
   # Record name
   name="_acme-challenge.$domain"
 
   # URL to post to
-  url="/servers/$SERVER/zones/$zone"
+  url="/servers/$SERVER/zones"
 
   # Header with the api key
   headers="X-API-Key: $KEY"
@@ -139,7 +165,7 @@ deploy() {
   }'
 
   # Do the request
-  request
+  request "PATCH" "${url}/${zone}" "$data"
 }
 
 clean() {
@@ -147,7 +173,7 @@ clean() {
   data='{"rrsets":[{"name":"'${name}'","type":"TXT","changetype":"DELETE"}]}'
 
   # Do the request
-  request
+  request "PATCH" "${url}/${zone}" "$data"
 }
 
 # Loop through arguments per 3
@@ -159,9 +185,10 @@ for ((i=2; i<=$#; i=i+3)); do
 
   # Debug output
   if [[ "$DEBUG" ]]; then
-    echo "Hook: $hook"
+    echo "Hook:  $hook"
     echo "Name:  $name"
     echo "Token: $token"
+    echo "Zone:  $zone"
   fi
 
   # Deploy a token
