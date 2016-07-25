@@ -121,6 +121,11 @@ setup() {
   # Header with the api key
   headers="X-API-Key: $KEY"
 
+  # Default port
+  if [[ -z "${PORT:-}" ]]; then
+    PORT="8081"
+  fi
+
   # Add the host and port to the url
   url="http://${HOST}:${PORT}${url}"
 
@@ -138,6 +143,17 @@ setup() {
   # Some version incompatibilities
   if [[ $VERSION -ge 1 ]]; then
     url="${url}/api/v${VERSION}"
+  fi
+
+  # Detect the server
+  if [[ -z "${SERVER:-}" ]]; then
+    request "GET" "${url}/servers" ""
+    SERVER=$(<<< "$res" get_json_string_value id)
+  fi
+
+  # Fallback to localhost
+  if [[ "$SERVER" = "" ]]; then
+    SERVER="localhost"
   fi
 
   # Zone endpoint on the API
