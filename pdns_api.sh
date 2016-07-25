@@ -52,7 +52,7 @@ fi
 ## Functions
 
 # Utility
-function join { local IFS="$1"; shift; echo "$*"; }
+function join { local IFS="${1}"; shift; echo "$*"; }
 
 # Different sed version for different os types...
 # From letsencrypt.sh
@@ -67,9 +67,9 @@ _sed() {
 # API request
 request() {
   # Request parameters
-  req_method="$1"
-  req_url="$2"
-  req_data="$3"
+  req_method="${1}"
+  req_url="${2}"
+  req_data="${3}"
 
   # Do the request
   res=$(curl -sS --request "$req_method" --header "$headers" --data "$req_data" "$req_url")
@@ -93,13 +93,21 @@ request() {
   fi
 }
 
+# Setup of connection settings
 setup() {
-  # Domain and token from arguments
-  domain="${1}"
-  token="${2}"
-  zone=""
+  # Zone endpoint on the API
+  url="/servers/$SERVER/zones"
 
-  IFS='.' read -a domain_array <<< "$domain"
+  # Header with the api key
+  headers="X-API-Key: $KEY"
+
+  # Some version incompatibilities
+  if [[ $VERSION -ge 1 ]]; then
+    url="/api/v${VERSION}${url}"
+  fi
+
+  # Add the host and port to the url
+  url="http://${HOST}:${PORT}${url}"
 
   # Get a zone list from the API is none was set
   if [[ "$all_zones" = "" ]]; then
@@ -109,6 +117,16 @@ setup() {
 
   # Sort zones to list most specific first
   all_zones=$(sort -r <<< "$all_zones")
+}
+
+setup_domain() {
+  # Domain and token from arguments
+  domain="${1}"
+  token="${2}"
+  zone=""
+
+  # Read domain parts into array
+  IFS='.' read -a domain_array <<< "$domain"
 
   # Find zone name, cut off subdomains until match
   for check_zone in $all_zones; do
@@ -129,22 +147,13 @@ setup() {
   # Record name
   name="_acme-challenge.$domain"
 
-  # URL to post to
-  url="/servers/$SERVER/zones"
-
-  # Header with the api key
-  headers="X-API-Key: $KEY"
-
   # Some version incompatibilities
   if [[ $VERSION -ge 1 ]]; then
     name="$name."
-    url="/api/v${VERSION}${url}"
+    zone="$zone."
   else
     extra_data=",\"name\": \"${name}\", \"type\": \"TXT\", \"ttl\": 1"
   fi
-
-  # Add the host and port to the url
-  url="http://${HOST}:${PORT}${url}"
 }
 
 deploy() {
@@ -176,12 +185,16 @@ clean() {
   request "PATCH" "${url}/${zone}" "$data"
 }
 
+# Main setup
+setup
+
+# Set hook
+hook="${1}"
+
 # Loop through arguments per 3
 for ((i=2; i<=$#; i=i+3)); do
   t=$(($i + 2))
-  setup "${!i}" "${!t}"
-
-  hook=$1
+  setup_domain "${!i}" "${!t}"
 
   # Debug output
   if [[ "$DEBUG" ]]; then
