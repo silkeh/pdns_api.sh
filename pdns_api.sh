@@ -51,8 +51,16 @@ fi
 
 ## Functions
 
-# Utility
-function join { local IFS="${1}"; shift; echo "$*"; }
+# Join an array with a character
+join() { local IFS="${1}"; shift; echo "$*"; }
+
+# Reverse a string
+rev() {
+  local str rev
+  str=$(cat)
+  for (( i=${#str}-1; i>=0; i-- )); do rev="${rev}${str:$i:1}"; done
+  echo "${rev}"
+}
 
 # Different sed version for different os types...
 # From letsencrypt.sh
@@ -145,7 +153,7 @@ setup() {
   all_zones="${all_zones//$'.\n'/ }"
 
   # Sort zones to list most specific first
-  all_zones=$(sort -r <<< "$all_zones")
+  all_zones=$(rev <<< "$all_zones" | sort | rev)
 }
 
 setup_domain() {
