@@ -24,40 +24,13 @@ set -o pipefail
 # Local directory
 DIR="$(dirname "$0")"
 
-# Check for config in various locations
-# From letsencrypt.sh
-if [[ -z "${CONFIG:-}" ]]; then
-  for check_config in "/etc/letsencrypt.sh" "/usr/local/etc/letsencrypt.sh" "${PWD}" "${DIR}"; do
-    if [[ -f "${check_config}/config" ]]; then
-      CONFIG="${check_config}/config"
-      break
-    fi
-  done
-fi
-
-# Check for zones.txt in various locations
-if [[ -z "${ZONES_TXT:-}" ]]; then
-  for check_zones in "/etc/letsencrypt.sh" "/usr/local/etc/letsencrypt.sh" "${PWD}" "${DIR}"; do
-    if [[ -f "${check_zones}/zones.txt" ]]; then
-      ZONES_TXT="${check_zones}/zones.txt"
-      break
-    fi
-  done
-fi
-
-# Load configuration
-. "${CONFIG}"
-
-# Load zones
-if [[ -f "${ZONES_TXT}" ]]; then
-  all_zones="$(cat "${ZONES_TXT}")"
-fi
-
-## Functions
-
 # Show an error/warning
-err() { echo "Error: $@" >&2; }
+error() { echo "Error: $@" >&2; }
 warn() { echo "Warning: $@" >&2; }
+fatalerror() { error "$@"; exit 1; }
+
+# Debug message
+debug() { [[ -z "${DEBUG:-}" ]] || echo "$@"; }
 
 # Join an array with a character
 join() { local IFS="$1"; shift; echo "$*"; }
@@ -96,6 +69,55 @@ get_json_int_value() {
   _sed -n "${filter}"
 }
 
+# Load the configuration and set default values
+load_config() {
+  # Check for config in various locations
+  # From letsencrypt.sh
+  if [[ -z "${CONFIG:-}" ]]; then
+    for check_config in "/etc/letsencrypt.sh" "/usr/local/etc/letsencrypt.sh" "${PWD}" "${DIR}"; do
+      if [[ -f "${check_config}/config" ]]; then
+        CONFIG="${check_config}/config"
+        break
+      fi
+    done
+  fi
+
+  # Default values
+  PORT=8081
+
+  # Check if config was set
+  if [[ -z "${CONFIG:-}" ]]; then
+    # Warn about missing config
+    warn "No config file found, using default config!"
+  elif [[ -f "${CONFIG}" ]]; then
+    # Load configuration
+    . "${CONFIG}"
+  fi
+
+  # Check required settings
+  [[ -n "${HOST:-}" ]] || fatalerror "HOST setting is required."
+  [[ -n "${KEY:-}" ]]  || fatalerror "KEY setting is required."
+}
+
+# Load the zones from file
+load_zones() {
+  # Check for zones.txt in various locations
+  if [[ -z "${ZONES_TXT:-}" ]]; then
+    for check_zones in "/etc/letsencrypt.sh" "/usr/local/etc/letsencrypt.sh" "${PWD}" "${DIR}"; do
+      if [[ -f "${check_zones}/zones.txt" ]]; then
+        ZONES_TXT="${check_zones}/zones.txt"
+        break
+      fi
+    done
+  fi
+
+  # Load zones
+  all_zones=""
+  if [[ -n "${ZONES_TXT:-}" ]] && [[ -f "${ZONES_TXT}" ]]; then
+    all_zones="$(cat "${ZONES_TXT}")"
+  fi
+}
+
 # API request
 request() {
   # Request parameters
@@ -108,16 +130,14 @@ request() {
   res="$(curl -sS --request "${method}" --header "${headers}" --data "${data}" "${url}")"
 
   # Debug output
-  if [[ "${DEBUG}" ]]; then
-    echo "Method: ${method}"
-    echo "URL: ${url}"
-    echo "Data: ${data}"
-    echo "Response: ${res}"
-  fi
+  debug "Method: ${method}"
+  debug "URL: ${url}"
+  debug "Data: ${data}"
+  debug "Response: ${res}"
 
   # Abort on failed request
   if [[ "${res}" = *"error"* ]] || [[ "${res}" = "Not Found" ]]; then
-    err "API error: ${res}"
+    error "API error: ${res}"
     exit 1
   fi
 }
@@ -245,56 +265,56 @@ clean() {
   request PATCH "${url}/${zone}" "${data}"
 }
 
-# Main setup
-setup
+main() {
+  # Main setup
+  load_config
+  load_zones
+  setup
 
-# Set hook
-hook="$1"
+  # Set hook
+  hook="$1"
 
-# Deployment of a certificate
-if [[ "${hook}" = "deploy_cert" ]]; then
-  exit 0
-fi
-
-# Unchanged certificate
-if [[ "${hook}" = "unchanged_cert" ]]; then
-  exit 0
-fi
-
-# Loop through arguments per 3
-for ((i=2; i<=$#; i=i+3)); do
-  # Setup for this domain
-  t=$(($i + 2))
-  setup_domain "${!i}" "${!t}"
-
-  # Debug output
-  if [[ "${DEBUG}" ]]; then
-    echo "Hook:  ${hook}"
-    echo "Name:  ${name}"
-    echo "Token: ${token}"
-    echo "Zone:  ${zone}"
+  # Deployment of a certificate
+  if [[ "${hook}" = "deploy_cert" ]]; then
+    exit 0
   fi
 
-  # Deploy a token
-  if [[ "${hook}" = "deploy_challenge" ]]; then
-    deploy
+  # Unchanged certificate
+  if [[ "${hook}" = "unchanged_cert" ]]; then
+    exit 0
   fi
 
-  # Remove a token
-  if [[ "${hook}" = "clean_challenge" ]]; then
-    clean
+  # Loop through arguments per 3
+  for ((i=2; i<=$#; i=i+3)); do
+    # Setup for this domain
+    t=$(($i + 2))
+    setup_domain "${!i}" "${!t}"
+
+    # Debug output
+    debug "Hook:  ${hook}"
+    debug "Name:  ${name}"
+    debug "Token: ${token}"
+    debug "Zone:  ${zone}"
+
+    # Deploy a token
+    if [[ "${hook}" = "deploy_challenge" ]]; then
+      deploy
+    fi
+
+    # Remove a token
+    if [[ "${hook}" = "clean_challenge" ]]; then
+      clean
+    fi
+
+    # Other actions are not implemented but will not cause an error
+  done
+
+  # Wait the requested amount of seconds when deployed
+  if [[ "${hook}" = "deploy_challenge" ]] && [[ -n "${WAIT:-}" ]]; then
+    debug "Waiting for ${WAIT} seconds"
+
+    sleep "${WAIT}"
   fi
+}
 
-  # Other actions are not implemented but will not cause an error
-done
-
-# Wait the requested amount of seconds when deployed
-if [[ "${hook}" = "deploy_challenge" ]] && [[ -n "${WAIT}" ]]; then
-  if [[ "${DEBUG}" ]]; then
-    echo "Waiting for ${WAIT} seconds"
-  fi
-
-  sleep "${WAIT}"
-fi
-
-exit 0
+main "$@"
