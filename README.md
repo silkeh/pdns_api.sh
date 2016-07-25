@@ -8,11 +8,11 @@ or a `config` file next to `pdns_api.sh`:
 
 ```sh
 HOST=ns0.example.com
-PORT=8081
+PORT=8081            # Optional. Defaults to 8081
 KEY=secret           # API key
-SERVER=localhost     # Server for the API to use, usually `localhost`
-VERSION=1            # Optional, API version - 0 for anything under PowerDNS 4
-WAIT=300             # Optional, for when slaves are slow
+SERVER=localhost     # Optional. Server for the API to use, usually `localhost`
+VERSION=1            # Optional. API version, 0 for anything under PowerDNS 4
+WAIT=300             # Optional. Delay for when slaves are slow
 ```
 
 Configure it as a DNS hook, by adding the following to your `letsencrypt.sh` config:
