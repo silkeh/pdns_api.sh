@@ -10,8 +10,8 @@ or a `config` file next to `pdns_api.sh`:
 HOST=ns0.example.com
 PORT=8081
 KEY=secret           # API key
-VERSION=1            # API version, 0 for anything under PowerDNS 4.
 SERVER=localhost     # Server for the API to use, usually `localhost`
+VERSION=1            # Optional, API version - 0 for anything under PowerDNS 4
 WAIT=300             # Optional, for when slaves are slow
 ```
 
@@ -23,12 +23,17 @@ HOOK="./pdns_api.sh"
 HOOK_CHAIN="yes"
 ```
 
-Subdomains are supported. If you use separate zones on the same server, create a file called `zones.txt` in `/etc/letsencrypt.sh/`, `/usr/local/etc/letsencrypt.sh/` or next to `pdns_api.sh`. Put your PowerDNS zones in order deeper before shorter in it like this:
+Nested zones and subdomains are supported.
+These zones should be detected automatically,
+but can be overridden by creating a file called `zones.txt` in
+`/etc/letsencrypt.sh/`, `/usr/local/etc/letsencrypt.sh/` or next to `pdns_api.sh` with the zones:
 
 ```
 test.example.domain.tld
 example.domain.tld
 test.domain.tld
 ```
+
+These zones can be added in any order.
 
 [le.sh]: https://github.com/lukas2511/letsencrypt.sh
