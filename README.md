@@ -1,5 +1,5 @@
 # pdns_api.sh
-A simple DNS hook that lets [`letsencrypt.sh`][le.sh] talk to the PowerDNS API.
+A simple DNS hook that lets [Dehydrated][] talk to the PowerDNS API.
 
 # Usage
 Add the settings for your PowerDNS API to
@@ -36,4 +36,4 @@ test.domain.tld
 
 These zones can be added in any order.
 
-[le.sh]: https://github.com/lukas2511/letsencrypt.sh
+[dehydrated]: https://github.com/lukas2511/dehydrated
