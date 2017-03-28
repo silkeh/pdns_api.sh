@@ -188,7 +188,7 @@ setup() {
   # Get a zone list from the API is none was set
   if [[ -z "${all_zones}" ]]; then
     request "GET" "${url}" ""
-    all_zones="$(<<< "${res//, /$',\n'}" get_json_string_value id)"
+    all_zones="$(<<< "${res//, /$',\n'}" get_json_string_value name)"
   fi
 
   # Strip trailing dots from zones
