@@ -193,6 +193,7 @@ setup() {
 
   # Strip trailing dots from zones
   all_zones="${all_zones//$'.\n'/ }"
+  all_zones="${all_zones%.}"
 
   # Sort zones to list most specific first
   all_zones="$(<<< "${all_zones}" rev | sort | rev)"
