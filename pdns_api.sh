@@ -24,6 +24,9 @@ set -o pipefail
 # Local directory
 DIR="$(dirname "$0")"
 
+# Config directories
+CONFIG_DIRS="/etc/dehydrated /usr/local/etc/dehydrated"
+
 # Show an error/warning
 error() { echo "Error: $*" >&2; }
 warn() { echo "Warning: $*" >&2; }
@@ -74,7 +77,7 @@ load_config() {
   # Check for config in various locations
   # From letsencrypt.sh
   if [[ -z "${CONFIG:-}" ]]; then
-    for check_config in "/etc/letsencrypt.sh" "/usr/local/etc/letsencrypt.sh" "${PWD}" "${DIR}"; do
+    for check_config in ${CONFIG_DIRS} "${PWD}" "${DIR}"; do
       if [[ -f "${check_config}/config" ]]; then
         CONFIG="${check_config}/config"
         break
@@ -83,29 +86,29 @@ load_config() {
   fi
 
   # Default values
-  PORT=8081
+  PDNS_PORT=8081
 
   # Check if config was set
   if [[ -z "${CONFIG:-}" ]]; then
     # Warn about missing config
     warn "No config file found, using default config!"
   elif [[ -f "${CONFIG}" ]]; then
-    # Load configuration
+    # shellcheck disable=SC1090
     . "${CONFIG}"
   fi
 
   # Check required settings
-  [[ -n "${HOST:-}" ]] || fatalerror "HOST setting is required."
-  [[ -n "${KEY:-}" ]]  || fatalerror "KEY setting is required."
+  [[ -n "${PDNS_HOST:-}" ]] || fatalerror "PDNS_HOST setting is required."
+  [[ -n "${PDNS_KEY:-}" ]]  || fatalerror "PDNS_KEY setting is required."
 }
 
 # Load the zones from file
 load_zones() {
   # Check for zones.txt in various locations
-  if [[ -z "${ZONES_TXT:-}" ]]; then
-    for check_zones in "/etc/letsencrypt.sh" "/usr/local/etc/letsencrypt.sh" "${PWD}" "${DIR}"; do
+  if [[ -z "${PDNS_ZONES_TXT:-}" ]]; then
+    for check_zones in ${CONFIG_DIRS} "${PWD}" "${DIR}"; do
       if [[ -f "${check_zones}/zones.txt" ]]; then
-        ZONES_TXT="${check_zones}/zones.txt"
+        PDNS_ZONES_TXT="${check_zones}/zones.txt"
         break
       fi
     done
@@ -113,8 +116,8 @@ load_zones() {
 
   # Load zones
   all_zones=""
-  if [[ -n "${ZONES_TXT:-}" ]] && [[ -f "${ZONES_TXT}" ]]; then
-    all_zones="$(cat "${ZONES_TXT}")"
+  if [[ -n "${PDNS_ZONES_TXT:-}" ]] && [[ -f "${PDNS_ZONES_TXT}" ]]; then
+    all_zones="$(cat "${PDNS_ZONES_TXT}")"
   fi
 }
 
@@ -145,45 +148,40 @@ request() {
 # Setup of connection settings
 setup() {
   # Header with the api key
-  headers="X-API-Key: ${KEY}"
-
-  # Default port
-  if [[ -z "${PORT:-}" ]]; then
-    PORT=8081
-  fi
+  headers="X-API-Key: ${PDNS_KEY}"
 
   # Add the host and port to the url
-  url="http://${HOST}:${PORT}"
+  url="http://${PDNS_HOST}:${PDNS_PORT}"
 
   # Detect the version
-  if [[ -z "${VERSION:-}" ]]; then
+  if [[ -z "${PDNS_VERSION:-}" ]]; then
     request "GET" "${url}/api" ""
-    VERSION="$(<<< "${res}" get_json_int_value version)"
+    PDNS_VERSION="$(<<< "${res}" get_json_int_value version)"
   fi
 
   # Fallback to version 0
-  if [[ -z "${VERSION}" ]]; then
-    VERSION=0
+  if [[ -z "${PDNS_VERSION}" ]]; then
+    PDNS_VERSION=0
   fi
 
   # Some version incompatibilities
-  if [[ "${VERSION}" -ge 1 ]]; then
-    url="${url}/api/v${VERSION}"
+  if [[ "${PDNS_VERSION}" -ge 1 ]]; then
+    url="${url}/api/v${PDNS_VERSION}"
   fi
 
   # Detect the server
-  if [[ -z "${SERVER:-}" ]]; then
+  if [[ -z "${PDNS_SERVER:-}" ]]; then
     request "GET" "${url}/servers" ""
-    SERVER="$(<<< "${res}" get_json_string_value id)"
+    PDNS_SERVER="$(<<< "${res}" get_json_string_value id)"
   fi
 
   # Fallback to localhost
-  if [[ -z "${SERVER}" ]]; then
-    SERVER="localhost"
+  if [[ -z "${PDNS_SERVER}" ]]; then
+    PDNS_SERVER="localhost"
   fi
 
   # Zone endpoint on the API
-  url="${url}/servers/${SERVER}/zones"
+  url="${url}/servers/${PDNS_SERVER}/zones"
 
   # Get a zone list from the API is none was set
   if [[ -z "${all_zones}" ]]; then
@@ -228,7 +226,7 @@ setup_domain() {
   fi
 
   # Some version incompatibilities
-  if [[ "${VERSION}" -ge 1 ]]; then
+  if [[ "${PDNS_VERSION}" -ge 1 ]]; then
     name="${name}."
     zone="${zone}."
     extra_data=""
@@ -315,10 +313,10 @@ main() {
   done
 
   # Wait the requested amount of seconds when deployed
-  if [[ "${hook}" = "deploy_challenge" ]] && [[ -n "${WAIT:-}" ]]; then
-    debug "Waiting for ${WAIT} seconds"
+  if [[ "${hook}" = "deploy_challenge" ]] && [[ -n "${PDNS_WAIT:-}" ]]; then
+    debug "Waiting for ${PDNS_WAIT} seconds"
 
-    sleep "${WAIT}"
+    sleep "${PDNS_WAIT}"
   fi
 }
 
