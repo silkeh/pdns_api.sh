@@ -332,7 +332,7 @@ main() {
   # Interface for SOA-EDIT
   if [[ "${hook}" = "soa_edit" ]]; then
     shift
-    soa_edit $@
+    soa_edit "$@"
     exit 0
   fi
 
