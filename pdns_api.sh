@@ -237,33 +237,23 @@ setup_domain() {
   fi
 }
 
-deploy() {
-  # Create the JSON string
-  data='{
-    "rrsets": [{
-      "name": "'${name}'",
-      "type": "TXT",
-      "ttl": 1,
-      "records": [{
-        "content": "\"'${token}'\"",
-        "disabled": false,
-        "set-ptr": false
-        '"${extra_data}"'
-      }],
-      "changetype": "REPLACE"
-    }]
+deploy_rrset() {
+  echo '{
+    "name": "'${name}'",
+    "type": "TXT",
+    "ttl": 1,
+    "records": [{
+      "content": "\"'${token}'\"",
+      "disabled": false,
+      "set-ptr": false
+      '"${extra_data}"'
+    }],
+    "changetype": "REPLACE"
   }'
-
-  # Do the request
-  request "PATCH" "${url}/${zone}" "${data}"
 }
 
-clean() {
-  # Create the JSON string
-  data='{"rrsets":[{"name":"'${name}'","type":"TXT","changetype":"DELETE"}]}'
-
-  # Do the request
-  request PATCH "${url}/${zone}" "${data}"
+clean_rrset() {
+  echo '{"name":"'${name}'","type":"TXT","changetype":"DELETE"}'
 }
 
 main() {
@@ -271,9 +261,13 @@ main() {
   load_config
   load_zones
   setup
+  declare -A requests
 
   # Set hook
   hook="$1"
+
+  # Debug output
+  debug "Hook:  ${hook}"
 
   # Deployment of a certificate
   if [[ "${hook}" = "deploy_cert" ]]; then
@@ -288,26 +282,36 @@ main() {
   # Loop through arguments per 3
   for ((i=2; i<=$#; i=i+3)); do
     # Setup for this domain
+    req=""
     t=$(($i + 2))
     setup_domain "${!i}" "${!t}"
 
     # Debug output
-    debug "Hook:  ${hook}"
     debug "Name:  ${name}"
     debug "Token: ${token}"
     debug "Zone:  ${zone}"
 
+    # Add comma
+    if [[ ${requests[${zone}]+x} ]]; then
+      req="${requests[${zone}]},"
+    fi
+
     # Deploy a token
     if [[ "${hook}" = "deploy_challenge" ]]; then
-      deploy
+      requests[${zone}]="${req}$(deploy_rrset)"
     fi
 
     # Remove a token
     if [[ "${hook}" = "clean_challenge" ]]; then
-      clean
+      requests[${zone}]="${req}$(clean_rrset)"
     fi
 
     # Other actions are not implemented but will not cause an error
+  done
+
+  # Perform requests
+  for zone in "${!requests[@]}"; do
+    request "PATCH" "${url}/${zone}" '{"rrsets": ['"${requests[${zone}]}"']}'
   done
 
   # Wait the requested amount of seconds when deployed
