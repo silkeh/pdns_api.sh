@@ -25,9 +25,9 @@ set -o pipefail
 DIR="$(dirname "$0")"
 
 # Show an error/warning
-error() { echo "Error: $@" >&2; }
-warn() { echo "Warning: $@" >&2; }
-fatalerror() { error "$@"; exit 1; }
+error() { echo "Error: $*" >&2; }
+warn() { echo "Warning: $*" >&2; }
+fatalerror() { error "$*"; exit 1; }
 
 # Debug message
 debug() { [[ -z "${DEBUG:-}" ]] || echo "$@"; }
@@ -209,12 +209,12 @@ setup_domain() {
   name="_acme-challenge.${domain}"
 
   # Read name parts into array
-  IFS='.' read -a name_array <<< "${name}"
+  IFS='.' read -ra name_array <<< "${name}"
 
   # Find zone name, cut off subdomains until match
   for check_zone in ${all_zones}; do
     for (( j=${#name_array[@]}-1; j>=0; j-- )); do
-      if [[ "${check_zone}" = "$(join . ${name_array[@]:j})" ]]; then
+      if [[ "${check_zone}" = "$(join . "${name_array[@]:j}")" ]]; then
         zone="${check_zone}"
         break 2
       fi
@@ -239,11 +239,11 @@ setup_domain() {
 
 deploy_rrset() {
   echo '{
-    "name": "'${name}'",
+    "name": "'"${name}"'",
     "type": "TXT",
     "ttl": 1,
     "records": [{
-      "content": "\"'${token}'\"",
+      "content": "\"'"${token}"'\"",
       "disabled": false,
       "set-ptr": false
       '"${extra_data}"'
@@ -253,7 +253,7 @@ deploy_rrset() {
 }
 
 clean_rrset() {
-  echo '{"name":"'${name}'","type":"TXT","changetype":"DELETE"}'
+  echo '{"name":"'"${name}"'","type":"TXT","changetype":"DELETE"}'
 }
 
 main() {
@@ -283,7 +283,7 @@ main() {
   for ((i=2; i<=$#; i=i+3)); do
     # Setup for this domain
     req=""
-    t=$(($i + 2))
+    t=$((i + 2))
     setup_domain "${!i}" "${!t}"
 
     # Debug output
