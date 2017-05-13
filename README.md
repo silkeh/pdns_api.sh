@@ -2,6 +2,7 @@
 A simple DNS hook that lets [Dehydrated][] talk to the PowerDNS API.
 
 # Usage
+## Configuration
 Add the settings for your PowerDNS API to Dehydrated's `config`
 (in `/etc/dehydrated` or `/usr/local/etc/dehydrated`),
 or a `config` file next to `pdns_api.sh`:
@@ -38,4 +39,15 @@ test.domain.tld
 
 These zones can be added in any order.
 
+## Incrementing the zone's serial
+PowerDNS can automatically increment the serial in the SOA record with the [SOA-EDIT][] metadata entry.
+`pdns_api.sh` can show and edit this entry.
+Usage:
+
+```sh
+pdns_api.sh soa_edit <zone> [soa-edit] [soa-edit-api]
+```
+
+
 [dehydrated]: https://github.com/lukas2511/dehydrated
+[SOA-EDIT]:   https://rtfm.powerdns.com/md/authoritative/dnssec/#soa-edit-ensure-signature-freshness-on-slaves

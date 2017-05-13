@@ -254,18 +254,53 @@ clean_rrset() {
   echo '{"name":"'"${name}"'","type":"TXT","changetype":"DELETE"}'
 }
 
-main() {
-  # Main setup
-  load_config
-  load_zones
-  setup
-  declare -A requests
+soa_edit() {
+  # Show help
+  if [[ $# -eq 0 ]]; then
+    echo "Usage: pdns_api.sh soa_edit <zone> [SOA-EDIT] [SOA-EDIT-API]"
+    exit 1
+  fi
 
+  # Get current values for zone
+  request "GET" "${url}/$1" ""
+
+  # Set variables
+  if [[ $# -le 1 ]]; then
+    soa_edit=$(<<< "${res}" get_json_string_value soa_edit)
+    soa_edit_api=$(<<< "${res}" get_json_string_value soa_edit_api)
+
+    echo "Current values:"
+  else
+    soa_edit="$2"
+    if [[ $# -eq 3 ]]; then
+      soa_edit_api="$3"
+    else
+      soa_edit_api="$2"
+    fi
+
+    echo "Setting:"
+  fi
+
+  # Display values
+  echo "SOA-EDIT:     ${soa_edit}"
+  echo "SOA-EDIT-API: ${soa_edit_api}"
+
+  # Update values
+  if [[ $# -eq 2 ]]; then
+    request "PUT" "${url}/${1}" '{
+      "soa_edit":"'"${soa_edit}"'",
+      "soa_edit_api":"'"${soa_edit_api}"'",
+      "kind":"'"$(<<< "${res}" get_json_string_value kind)"'"
+    }'
+  fi
+}
+
+main() {
   # Set hook
   hook="$1"
 
   # Debug output
-  debug "Hook:  ${hook}"
+  debug "Hook: ${hook}"
 
   # Deployment of a certificate
   if [[ "${hook}" = "deploy_cert" ]]; then
@@ -274,6 +309,19 @@ main() {
 
   # Unchanged certificate
   if [[ "${hook}" = "unchanged_cert" ]]; then
+    exit 0
+  fi
+
+  # Main setup
+  load_config
+  load_zones
+  setup
+  declare -A requests
+
+  # Interface for SOA-EDIT
+  if [[ "${hook}" = "soa_edit" ]]; then
+    shift
+    soa_edit $@
     exit 0
   fi
 
