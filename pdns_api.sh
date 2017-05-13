@@ -188,11 +188,12 @@ setup() {
   # Get a zone list from the API is none was set
   if [[ -z "${all_zones}" ]]; then
     request "GET" "${url}" ""
-    all_zones="$(<<< "${res//, /$',\n'}" get_json_string_value id)"
+    all_zones="$(<<< "${res//, /$',\n'}" get_json_string_value name)"
   fi
 
   # Strip trailing dots from zones
   all_zones="${all_zones//$'.\n'/ }"
+  all_zones="${all_zones%.}"
 
   # Sort zones to list most specific first
   all_zones="$(<<< "${all_zones}" rev | sort | rev)"
@@ -204,13 +205,16 @@ setup_domain() {
   token="$2"
   zone=""
 
-  # Read domain parts into array
-  IFS='.' read -a domain_array <<< "${domain}"
+  # Record name
+  name="_acme-challenge.${domain}"
+
+  # Read name parts into array
+  IFS='.' read -a name_array <<< "${name}"
 
   # Find zone name, cut off subdomains until match
   for check_zone in ${all_zones}; do
-    for (( j=${#domain_array[@]}-1; j>=0; j-- )); do
-      if [[ "${check_zone}" = "$(join . ${domain_array[@]:j})" ]]; then
+    for (( j=${#name_array[@]}-1; j>=0; j-- )); do
+      if [[ "${check_zone}" = "$(join . ${name_array[@]:j})" ]]; then
         zone="${check_zone}"
         break 2
       fi
@@ -219,12 +223,9 @@ setup_domain() {
 
   # Fallback to creating zone from arguments
   if [[ -z "${zone}" ]]; then
-    zone="${domain_array[*]: -2:1}.${domain_array[*]: -1:1}"
+    zone="${name_array[*]: -2:1}.${name_array[*]: -1:1}"
     warn "zone not found, using '${zone}'"
   fi
-
-  # Record name
-  name="_acme-challenge.${domain}"
 
   # Some version incompatibilities
   if [[ "${VERSION}" -ge 1 ]]; then
