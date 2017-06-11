@@ -296,16 +296,14 @@ soa_edit() {
 }
 
 exit_hook() {
-
   if [[ ! -z "${PDNS_EXIT_HOOK:-}" ]]; then
       if [[ -x "${PDNS_EXIT_HOOK}" ]]; then
-        exec ${PDNS_EXIT_HOOK}
+        exec "${PDNS_EXIT_HOOK}"
       else
-        error "Your ${PDNS_EXIT_HOOK} not an executable"
+        error "${PDNS_EXIT_HOOK} is not an executable"
         exit 1
       fi
   fi
-
 }
 
 main() {
@@ -341,7 +339,7 @@ main() {
   # Interface for exit_hook
   if [[ "${hook}" = "exit_hook" ]]; then
     shift
-    exit_hook $@
+    exit_hook "$@"
     exit 0
   fi
 
