@@ -210,6 +210,7 @@ setup_domain() {
         name="_acme-challenge.${rootdomain}"
 	#warn "domain is a wildcard domain, acme challenge will be for ${name}"
   else
+  	wildcard=false
         name="_acme-challenge.${domain}"
   fi
 
