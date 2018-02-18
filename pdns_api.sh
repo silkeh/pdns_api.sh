@@ -204,7 +204,12 @@ setup_domain() {
   zone=""
 
   # Record name
-  name="_acme-challenge.${domain}"
+  if [[ "${domain}" == "*."* ]]; then
+    name="_acme-challenge.${domain:2}"
+    debug "Domain ${domain} is a wildcard domain, ACME challenge will be for ${name}"
+  else
+    name="_acme-challenge.${domain}"
+  fi
 
   # Read name parts into array
   IFS='.' read -ra name_array <<< "${name}"
