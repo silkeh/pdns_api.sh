@@ -376,6 +376,7 @@ main() {
   # Perform requests
   for zone in "${!requests[@]}"; do
     request "PATCH" "${url}/${zone}" '{"rrsets": ['"${requests[${zone}]}"']}'
+    request "PUT" "${url}/${zone}/notify" ''
   done
 
   # Wait the requested amount of seconds when deployed
