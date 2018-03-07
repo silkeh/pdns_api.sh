@@ -318,13 +318,8 @@ main() {
   # Debug output
   debug "Hook: ${hook}"
 
-  # Deployment of a certificate
-  if [[ "${hook}" = "deploy_cert" ]]; then
-    exit 0
-  fi
-
-  # Unchanged certificate
-  if [[ "${hook}" = "unchanged_cert" ]]; then
+  # Ignore unknown hooks
+  if [[ ! "${hook}" =~ ^(deploy_challenge|clean_challenge|soa_edit|exit_hook)$ ]]; then
     exit 0
   fi
 
