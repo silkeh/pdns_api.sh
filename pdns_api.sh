@@ -204,12 +204,7 @@ setup_domain() {
   zone=""
 
   # Record name
-  if [[ "${domain}" == "*."* ]]; then
-    name="_acme-challenge.${domain:2}"
-    debug "Domain ${domain} is a wildcard domain, ACME challenge will be for ${name}"
-  else
-    name="_acme-challenge.${domain}"
-  fi
+  name="_acme-challenge.${domain}"
 
   # Read name parts into array
   IFS='.' read -ra name_array <<< "${name}"
@@ -240,17 +235,27 @@ setup_domain() {
   fi
 }
 
+get_records() {
+  IFS=" " read -ra tokens <<< "${token}"
+
+  for i in "${!tokens[@]}"; do
+    printf '%.*s' $((i != 0)) ","
+
+    echo -n '{
+    "content": "\"'"${tokens[$i]}"'\"",
+    "disabled": false,
+    "set-ptr": false
+    '"${extra_data}"'
+    }'
+  done
+}
+
 deploy_rrset() {
-  echo '{
+  echo -n '{
     "name": "'"${name}"'",
     "type": "TXT",
     "ttl": 1,
-    "records": [{
-      "content": "\"'"${token}"'\"",
-      "disabled": false,
-      "set-ptr": false
-      '"${extra_data}"'
-    }],
+    "records": ['"$(get_records)"'],
     "changetype": "REPLACE"
   }'
 }
@@ -343,12 +348,27 @@ main() {
     exit 0
   fi
 
+  declare -A domains
   # Loop through arguments per 3
   for ((i=2; i<=$#; i=i+3)); do
+    t=$((i + 2))
+    _domain="${!i}"
+    _token="${!t}"
+
+    if [[ "${_domain}" == "*."* ]]; then
+      debug "Domain ${_domain} is a wildcard domain, ACME challenge will be for domain apex (${_domain:2})"
+      _domain="${_domain:2}"
+    fi
+
+    domains[${_domain}]="${_token} ${domains[${_domain}]:-}"
+  done
+
+  # Loop through unique domains
+  for domain in "${!domains[@]}"; do
     # Setup for this domain
     req=""
-    t=$((i + 2))
-    setup_domain "${!i}" "${!t}"
+    t=${domains[${domain}]}
+    setup_domain "${domain}" "${t}"
 
     # Debug output
     debug "Name:  ${name}"
