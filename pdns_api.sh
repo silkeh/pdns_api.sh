@@ -128,9 +128,13 @@ request() {
   method="$1"
   url="$2"
   data="$3"
+  error=false
 
-  # Do the request
-  res="$(curl -sS --request "${method}" --header "${headers}" --data "${data}" "${url}")"
+  # Perform the request
+  # This is wrappend in an if to avoid the exit on error
+  if ! res="$(curl -sSfL --stderr - --request "${method}" --header "${headers}" --data "${data}" "${url}")"; then
+    error=true
+  fi
 
   # Debug output
   debug "Method: ${method}"
@@ -139,7 +143,7 @@ request() {
   debug "Response: ${res}"
 
   # Abort on failed request
-  if [[ "${res}" = *"error"* ]] || [[ "${res}" = "Not Found" ]]; then
+  if [[ "${res}" = *"error"* ]] || [[ "${error}" = true ]]; then
     error "API error: ${res}"
     exit 1
   fi
