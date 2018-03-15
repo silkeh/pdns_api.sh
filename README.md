@@ -8,7 +8,7 @@ Add the settings for your PowerDNS API to Dehydrated's `config`
 or a `config` file next to `pdns_api.sh`:
 
 ```sh
-PDNS_HOST=ns0.example.com
+PDNS_HOST=ns0.example.com # API Host. Can also be a URL, eg: http://ns0.example.com:8081
 PDNS_PORT=8081            # Optional. Defaults to 8081
 PDNS_KEY=secret           # API key
 PDNS_SERVER=localhost     # Optional. Server for the API to use, usually `localhost`

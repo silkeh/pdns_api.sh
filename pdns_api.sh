@@ -150,8 +150,13 @@ setup() {
   # Header with the api key
   headers="X-API-Key: ${PDNS_KEY}"
 
-  # Add the host and port to the url
-  url="http://${PDNS_HOST}:${PDNS_PORT}"
+  # Set the URL to the host if it is a URL,
+  # otherwise create it from the host and port.
+  if [[ "${PDNS_HOST}" == http?(s)://* ]]; then
+    url="${PDNS_HOST}"
+  else
+    url="http://${PDNS_HOST}:${PDNS_PORT}"
+  fi
 
   # Detect the version
   if [[ -z "${PDNS_VERSION:-}" ]]; then
