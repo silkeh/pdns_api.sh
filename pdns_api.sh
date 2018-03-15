@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-# Copyright 2016 - Silke Hofstra
+# Copyright 2016-2018 - Silke Hofstra and contributors
 #
-# Licensed under the EUPL, Version 1.1 or -- as soon they will be approved by
-# the European Commission -- subsequent versions of the EUPL (the "Licence");
+# Licensed under the EUPL
+#
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at:
 #
-# https://joinup.ec.europa.eu/software/page/eupl
+# https://joinup.ec.europa.eu/collection/eupl
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the Licence is distributed on an "AS IS" basis,
