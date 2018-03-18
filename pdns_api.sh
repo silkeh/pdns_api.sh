@@ -85,9 +85,6 @@ load_config() {
     done
   fi
 
-  # Default values
-  [[ -n "${PDNS_PORT:-}" ]] || PDNS_PORT=8081
-
   # Check if config was set
   if [[ -z "${CONFIG:-}" ]]; then
     # Warn about missing config
@@ -132,6 +129,9 @@ load_config() {
   # Check required settings
   [[ -n "${PDNS_HOST:-}" ]] || fatalerror "PDNS_HOST setting is required."
   [[ -n "${PDNS_KEY:-}" ]]  || fatalerror "PDNS_KEY setting is required."
+
+  # Check optional settings
+  [[ -n "${PDNS_PORT:-}" ]] || PDNS_PORT=8081
 }
 
 # Load the zones from file
