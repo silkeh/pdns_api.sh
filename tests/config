@@ -1,0 +1,7 @@
+export PDNS_HOST=hostname
+export PDNS_PORT=8000
+export PDNS_KEY=secretkey
+export PDNS_SERVER=servername
+export PDNS_VERSION=1
+export PDNS_ZONES_TXT=tests/zones.txt
+export PDNS_NO_NOTIFY=true
