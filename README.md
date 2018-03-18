@@ -1,4 +1,6 @@
 # pdns_api.sh
+[![Build Status](https://travis-ci.org/silkeh/pdns_api.sh.svg?branch=master)](https://travis-ci.org/silkeh/pdns_api.sh)
+
 A simple DNS hook that lets [Dehydrated][] talk to the PowerDNS API.
 
 # Usage
