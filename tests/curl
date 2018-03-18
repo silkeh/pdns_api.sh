@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# Copyright 2016-2018 - Silke Hofstra and contributors
+#
+# Licensed under the EUPL
+
+method=""
+url=""
+data=""
+header=
+
+# >&2 echo $@
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --request)
+            method="$2"
+            shift
+            ;;
+        --data)
+            data="$2"
+            shift
+            ;;
+        --header)
+            header="$2"
+            shift
+            ;;
+        http*)
+            url="$1"
+            ;;
+        *)
+            ;;
+    esac
+    shift
+done
+
+>&2 echo -e "${method} ${url}\n${data}"
+echo -e "${method} ${url}\n${data}"> /tmp/log
+exit 0

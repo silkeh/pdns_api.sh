@@ -1,0 +1,2 @@
+example.com
+zone.example.com
