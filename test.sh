@@ -90,25 +90,33 @@ _RELOAD_CONFIG() {
   fi
 }
 
-# Run the tests in the tests folder
-for test in tests/*.sh; do
-  _RELOAD_CONFIG
-  # shellcheck source=/dev/null
-  source "${test}"
-done
-
-# Run the tests for API versions
-for version in {1..1}; do
-  echo "=> API version ${version}"
-  for test in tests/v${version}/*.sh; do
-    _RELOAD_CONFIG "${version}"
+# Run all tests
+if [ $# -eq 0 ]; then
+  # Run the tests in the tests folder
+  for test in tests/*.sh; do
+    _RELOAD_CONFIG
     # shellcheck source=/dev/null
     source "${test}"
   done
-done
 
+  # Run the tests for API versions
+  for version in {1..1}; do
+    echo "=> API version ${version}"
+    for test in tests/v${version}/*.sh; do
+      _RELOAD_CONFIG "${version}"
+      # shellcheck source=/dev/null
+      source "${test}"
+    done
+  done
+else
+  # Run the given tests
+  for test in "$@"; do
+    _RELOAD_CONFIG
+    # shellcheck source=/dev/null
+    source "${test}"
+  done
+fi
 
 echo "Tests complete: ${FAILURES} failures."
 
 exit ${FAILURES}
-

@@ -1,0 +1,39 @@
+language: bash
+
+stages:
+  - lint
+  - test
+
+services:
+  - docker
+
+env:
+  - VERBOSE=true
+
+jobs:
+  include:
+    - stage: lint
+      name: shellcheck
+      script:
+        - shellcheck --version
+        - shellcheck **/*.sh
+
+    - stage: test
+      name: bash latest
+      env:
+        - IMAGE=bash:latest
+      script: &bash
+        - docker pull "$IMAGE"
+        - docker run -v "$PWD:/mnt" "$IMAGE" /mnt/test.sh
+
+    - stage: test
+      name: bash 5
+      env:
+        - IMAGE=bash:5
+      script: *bash
+
+    - stage: test
+      name: bash 4
+      env:
+        - IMAGE=bash:4
+      script: *bash
