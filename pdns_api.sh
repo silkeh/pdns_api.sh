@@ -437,7 +437,9 @@ main() {
   # Perform requests
   for zone in "${!requests[@]}"; do
     request "PATCH" "${url}/${zone}" '{"rrsets": ['"${requests[${zone}]}"']}'
-    request "PUT" "${url}/${zone}/notify" ''
+    if [[ -z "${PDNS_NO_NOTIFY:-}" ]]; then
+      request "PUT" "${url}/${zone}/notify" ''
+    fi
   done
 
   # Wait the requested amount of seconds when deployed
