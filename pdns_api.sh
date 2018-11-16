@@ -103,7 +103,12 @@ load_config() {
     fi
 
     # Allow globbing
-    [[ -n "${ZSH_VERSION:-}" ]] && set +o noglob || set +f
+    if [[ -n "${ZSH_VERSION:-}" ]]
+    then
+      set +o noglob
+    else
+      set +f
+    fi
 
     for check_config_d in "${CONFIG_D}"/*.sh; do
       if [[ -f "${check_config_d}" ]] && [[ -r "${check_config_d}" ]]; then
@@ -116,7 +121,12 @@ load_config() {
     done
 
     # Disable globbing
-    [[ -n "${ZSH_VERSION:-}" ]] && set -o noglob || set -f
+    if [[ -n "${ZSH_VERSION:-}" ]]
+    then
+      set -o noglob
+    else
+      set -f
+    fi
   fi
 
   # Check required settings
