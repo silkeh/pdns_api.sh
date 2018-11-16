@@ -97,7 +97,7 @@ load_config() {
     . "${CONFIG}"
   fi
 
-  if [[ -n "${CONFIG_D}" ]]; then
+  if [[ -n "${CONFIG_D:-}" ]]; then
     if [[ ! -d "${CONFIG_D}" ]]; then
       _exiterr "The path ${CONFIG_D} specified for CONFIG_D does not point to a directory."
     fi
