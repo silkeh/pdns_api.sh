@@ -86,7 +86,7 @@ load_config() {
   fi
 
   # Default values
-  PDNS_PORT=8081
+  [[ -n "${PDNS_PORT:-}" ]] || PDNS_PORT=8081
 
   # Check if config was set
   if [[ -z "${CONFIG:-}" ]]; then
