@@ -97,6 +97,28 @@ load_config() {
     . "${CONFIG}"
   fi
 
+  if [[ -n "${CONFIG_D}" ]]; then
+    if [[ ! -d "${CONFIG_D}" ]]; then
+      _exiterr "The path ${CONFIG_D} specified for CONFIG_D does not point to a directory."
+    fi
+
+    # Allow globbing
+    [[ -n "${ZSH_VERSION:-}" ]] && set +o noglob || set +f
+
+    for check_config_d in "${CONFIG_D}"/*.sh; do
+      if [[ -f "${check_config_d}" ]] && [[ -r "${check_config_d}" ]]; then
+        echo "# INFO: Using additional config file ${check_config_d}"
+        # shellcheck disable=SC1090
+        . "${check_config_d}"
+      else
+        _exiterr "Specified additional config ${check_config_d} is not readable or not a file at all."
+      fi
+    done
+
+    # Disable globbing
+    [[ -n "${ZSH_VERSION:-}" ]] && set -o noglob || set -f
+  fi
+
   # Check required settings
   [[ -n "${PDNS_HOST:-}" ]] || fatalerror "PDNS_HOST setting is required."
   [[ -n "${PDNS_KEY:-}" ]]  || fatalerror "PDNS_KEY setting is required."
