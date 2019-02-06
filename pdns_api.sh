@@ -239,7 +239,7 @@ setup() {
 
   # Set suffix in case of CNAME redirection
   if [[ -n "${PDNS_SUFFIX:-}" ]]; then
-      suffix="${PDNS_SUFFIX}"
+      suffix=".${PDNS_SUFFIX}"
   else
       suffix=""
   fi

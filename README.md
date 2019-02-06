@@ -8,15 +8,15 @@ Add the settings for your PowerDNS API to Dehydrated's `config`
 or a `config` file next to `pdns_api.sh`:
 
 ```sh
-PDNS_HOST=ns0.example.com  # API Host. Can also be a URL, eg: http://ns0.example.com:8081
-PDNS_PORT=8081             # Optional. Defaults to 8081
-PDNS_KEY=secret            # API key
-PDNS_SERVER=localhost      # Optional. Server for the API to use, usually `localhost`
-PDNS_VERSION=1             # Optional. API version, 0 for anything under PowerDNS 4
-PDNS_WAIT=300              # Optional. Delay for when slaves are slow
-PDNS_ZONES_TXT=zones.txt   # Optional. File containing zones to use (see below).
-PDNS_NO_NOTIFY=yes         # Optional. Disable sending a notification after updating the zone.
-PDNS_SUFFIX=.v.example.com # Optional. When using a dedicated validation zone via CNAME redirection
+PDNS_HOST=ns0.example.com # API Host. Can also be a URL, eg: http://ns0.example.com:8081
+PDNS_PORT=8081            # Optional. Defaults to 8081
+PDNS_KEY=secret           # API key
+PDNS_SERVER=localhost     # Optional. Server for the API to use, usually `localhost`
+PDNS_VERSION=1            # Optional. API version, 0 for anything under PowerDNS 4
+PDNS_WAIT=300             # Optional. Delay for when slaves are slow
+PDNS_ZONES_TXT=zones.txt  # Optional. File containing zones to use (see below).
+PDNS_NO_NOTIFY=yes        # Optional. Disable sending a notification after updating the zone.
+PDNS_SUFFIX=v.example.com # Optional. When using a dedicated validation zone via CNAME redirection
 ```
 
 Configure the DNS hook by adding the following to your Dehydrated config:
