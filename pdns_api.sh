@@ -236,6 +236,13 @@ setup() {
 
   # Sort zones to list most specific first
   all_zones="$(<<< "${all_zones}" rev | sort | rev)"
+
+  # Set suffix in case of CNAME redirection
+  if [[ -n "${PDNS_SUFFIX:-}" ]]; then
+      suffix=".${PDNS_SUFFIX}"
+  else
+      suffix=""
+  fi
 }
 
 setup_domain() {
@@ -245,7 +252,7 @@ setup_domain() {
   zone=""
 
   # Record name
-  name="_acme-challenge.${domain}"
+  name="_acme-challenge.${domain}${suffix}"
 
   # Read name parts into array
   IFS='.' read -ra name_array <<< "${name}"

@@ -16,6 +16,7 @@ PDNS_VERSION=1            # Optional. API version, 0 for anything under PowerDNS
 PDNS_WAIT=300             # Optional. Delay for when slaves are slow
 PDNS_ZONES_TXT=zones.txt  # Optional. File containing zones to use (see below).
 PDNS_NO_NOTIFY=yes        # Optional. Disable sending a notification after updating the zone.
+PDNS_SUFFIX=v.example.com # Optional. When using a dedicated validation zone via CNAME redirection
 ```
 
 Configure the DNS hook by adding the following to your Dehydrated config:
