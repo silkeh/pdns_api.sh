@@ -333,7 +333,7 @@ soa_edit() {
     if [[ $# -eq 3 ]]; then
       soa_edit_api="$3"
     else
-      soa_edit_api="$2"
+      soa_edit_api="DEFAULT"
     fi
 
     echo "Setting:"
