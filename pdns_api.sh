@@ -344,7 +344,7 @@ soa_edit() {
   echo "SOA-EDIT-API: ${soa_edit_api}"
 
   # Update values
-  if [[ $# -eq 2 ]]; then
+  if [[ $# -ge 2 ]]; then
     request "PUT" "${url}/${1}" '{
       "soa_edit":"'"${soa_edit}"'",
       "soa_edit_api":"'"${soa_edit_api}"'",
