@@ -164,7 +164,7 @@ request() {
 
   # Perform the request
   # This is wrappend in an if to avoid the exit on error
-  if ! res="$(curl -sSfL --stderr - --request "${method}" --header "${headers}" --data "${data}" "${url}")"; then
+  if ! res="$(curl -sSfL --stderr - --request "${method}" --header "${content_header}" --header "${api_header}" --data "${data}" "${url}")"; then
     error=true
   fi
 
@@ -183,8 +183,9 @@ request() {
 
 # Setup of connection settings
 setup() {
-  # Header with the api key
-  headers="X-API-Key: ${PDNS_KEY}"
+  # Header values
+  api_header="X-API-Key: ${PDNS_KEY}"
+  content_header="Content-Type: application/json"
 
   # Set the URL to the host if it is a URL,
   # otherwise create it from the host and port.
