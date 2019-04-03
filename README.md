@@ -54,4 +54,4 @@ pdns_api.sh soa_edit <zone> [soa-edit] [soa-edit-api]
 
 
 [dehydrated]: https://github.com/lukas2511/dehydrated
-[SOA-EDIT]:   https://rtfm.powerdns.com/md/authoritative/dnssec/#soa-edit-ensure-signature-freshness-on-slaves
+[SOA-EDIT]:   https://doc.powerdns.com/authoritative/dnssec/operational.html#soa-edit-ensure-signature-freshness-on-slaves
