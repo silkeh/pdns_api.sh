@@ -96,7 +96,7 @@ load_config() {
 
   if [[ -n "${CONFIG_D:-}" ]]; then
     if [[ ! -d "${CONFIG_D}" ]]; then
-      _exiterr "The path ${CONFIG_D} specified for CONFIG_D does not point to a directory."
+      fatalerror "The path ${CONFIG_D} specified for CONFIG_D does not point to a directory."
     fi
 
     # Allow globbing
@@ -113,7 +113,7 @@ load_config() {
         # shellcheck disable=SC1090
         . "${check_config_d}"
       else
-        _exiterr "Specified additional config ${check_config_d} is not readable or not a file at all."
+        fatalerror "Specified additional config ${check_config_d} is not readable or not a file at all."
       fi
     done
 
@@ -176,8 +176,7 @@ request() {
 
   # Abort on failed request
   if [[ "${res}" = *"error"* ]] || [[ "${error}" = true ]]; then
-    error "API error: ${res}"
-    exit 1
+    fatalerror "API error: ${res}"
   fi
 }
 
@@ -359,8 +358,7 @@ exit_hook() {
       if [[ -x "${PDNS_EXIT_HOOK}" ]]; then
         exec "${PDNS_EXIT_HOOK}"
       else
-        error "${PDNS_EXIT_HOOK} is not an executable"
-        exit 1
+        fatalerror "${PDNS_EXIT_HOOK} is not an executable"
       fi
   fi
 }
