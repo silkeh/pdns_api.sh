@@ -169,6 +169,7 @@ request() {
   fi
 
   # Debug output
+  debug "# Request"
   debug "Method: ${method}"
   debug "URL: ${url}"
   debug "Data: ${data}"
@@ -243,6 +244,13 @@ setup() {
   else
       suffix=""
   fi
+
+  # Debug setup result
+  debug "# Setup"
+  debug "API version: ${PDNS_VERSION}"
+  debug "PDNS server: ${PDNS_SERVER}"
+  debug "Zones: ${all_zones}"
+  debug "Suffix: \"${suffix}\""
 }
 
 setup_domain() {
@@ -418,6 +426,7 @@ main() {
     setup_domain "${domain}" "${t}"
 
     # Debug output
+    debug "# Domain"
     debug "Name:  ${name}"
     debug "Token: ${token}"
     debug "Zone:  ${zone}"
