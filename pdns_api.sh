@@ -371,6 +371,12 @@ exit_hook() {
   fi
 }
 
+deploy_cert() {
+  if [[ ! -z "${PDNS_DEPLOY_CERT_HOOK:-}" ]]; then
+    ${PDNS_DEPLOY_CERT_HOOK}
+  fi
+}
+
 main() {
   # Set hook
   hook="$1"
@@ -379,7 +385,7 @@ main() {
   debug "Hook: ${hook}"
 
   # Ignore unknown hooks
-  if [[ ! "${hook}" =~ ^(deploy_challenge|clean_challenge|soa_edit|exit_hook)$ ]]; then
+  if [[ ! "${hook}" =~ ^(deploy_challenge|clean_challenge|soa_edit|exit_hook|deploy_cert)$ ]]; then
     exit 0
   fi
 
@@ -400,6 +406,12 @@ main() {
   if [[ "${hook}" = "exit_hook" ]]; then
     shift
     exit_hook "$@"
+    exit 0
+  fi
+
+  # Interface for deploy_cert
+  if [[ "${hook}" = "deploy_cert" ]]; then
+    deploy_cert "$@"
     exit 0
   fi
 
