@@ -132,6 +132,8 @@ load_config() {
 
   # Check optional settings
   [[ -n "${PDNS_PORT:-}" ]] || PDNS_PORT=8081
+  # Check if PDNS_CURL_OPTS is unset
+  [[ -n "${PDNS_CURL_OPTS+empty}" ]] || PDNS_CURL_OPTS=${CURL_OPTS:-}
 }
 
 # Load the zones from file
@@ -164,7 +166,7 @@ request() {
 
   # Perform the request
   # This is wrappend in an if to avoid the exit on error
-  if ! res="$(curl -sSfL --stderr - --request "${method}" --header "${content_header}" --header "${api_header}" --data "${data}" "${url}")"; then
+  if ! res="$(curl ${PDNS_CURL_OPTS:-} -sSfL --stderr - --request "${method}" --header "${content_header}" --header "${api_header}" --data "${data}" "${url}")"; then
     error=true
   fi
 

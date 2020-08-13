@@ -19,6 +19,9 @@ PDNS_WAIT=300             # Optional. Delay for when slaves are slow
 PDNS_ZONES_TXT=zones.txt  # Optional. File containing zones to use (see below).
 PDNS_NO_NOTIFY=yes        # Optional. Disable sending a notification after updating the zone.
 PDNS_SUFFIX=v.example.com # Optional. When using a dedicated validation zone via CNAME redirection
+PDNS_CURL_OPTS="-k"       # Optional. Pass some options to curl
+                          #   CURL_OPTS variable will be used if PDNS_CURL_OPTS undefined
+                          #   To ignore CURL_OPTS you could set PDNS_CURL_OPTS to empty string
 ```
 
 Configure the DNS hook by adding the following to your Dehydrated config:
