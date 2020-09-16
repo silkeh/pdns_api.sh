@@ -191,7 +191,7 @@ setup() {
 
   # Set the URL to the host if it is a URL,
   # otherwise create it from the host and port.
-  if [[ "${PDNS_HOST}" == http?(s)://* ]]; then
+  if [[ "${PDNS_HOST}" == http://* || "${PDNS_HOST}" == https://* ]]; then
     url="${PDNS_HOST}"
   else
     url="http://${PDNS_HOST}:${PDNS_PORT}"
