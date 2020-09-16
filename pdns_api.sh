@@ -383,9 +383,6 @@ main() {
   # Set hook
   hook="$1"
 
-  # Debug output
-  debug "Hook: ${hook}"
-
   # Ignore unknown hooks
   if [[ ! "${hook}" =~ ^(deploy_challenge|clean_challenge|soa_edit|exit_hook|deploy_cert)$ ]]; then
     exit 0
@@ -396,6 +393,12 @@ main() {
   load_zones
   setup
   declare -A requests
+
+  # Debug output
+  debug "# Main"
+  debug "Bash: ${BASH_VERSION}"
+  debug "Args: $*"
+  debug "Hook: ${hook}"
 
   # Interface for SOA-EDIT
   if [[ "${hook}" = "soa_edit" ]]; then
