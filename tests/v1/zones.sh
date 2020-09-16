@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PDNS_ZONES_TXT=
+export PDNS_ZONES_TXT="/dev/null"
 
 _TEST "V1 Zone index"
 _SUBTEST "Deploy"
