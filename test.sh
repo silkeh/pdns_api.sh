@@ -20,7 +20,7 @@ set -euo pipefail
 
 # Settings for the test
 export DEBUG=
-export CONFIG=./test.config
+export CONFIG="/dev/null"
 
 # Override commands
 export PATH="tests:$PATH"
