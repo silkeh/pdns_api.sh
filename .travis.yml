@@ -18,22 +18,25 @@ jobs:
         - shellcheck --version
         - shellcheck **/*.sh
 
-    - stage: test
-      name: bash latest
-      env:
-        - IMAGE=bash:latest
+    - name: bash:latest
       script: &bash
-        - docker pull "$IMAGE"
-        - docker run -v "$PWD:/mnt" "$IMAGE" /mnt/test.sh
+        - docker pull "$TRAVIS_JOB_NAME"
+        - docker run -v "$PWD:/mnt" "$TRAVIS_JOB_NAME" /mnt/test.sh
 
-    - stage: test
-      name: bash 5
-      env:
-        - IMAGE=bash:5
+    - name: bash:4.0
       script: *bash
 
-    - stage: test
-      name: bash 4
-      env:
-        - IMAGE=bash:4
+    - name: bash:4.1
+      script: *bash
+
+    - name: bash:4.2
+      script: *bash
+
+    - name: bash:4.3
+      script: *bash
+
+    - name: bash:4.4
+      script: *bash
+
+    - name: bash:5.0
       script: *bash
