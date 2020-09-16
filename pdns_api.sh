@@ -297,7 +297,7 @@ get_records() {
   IFS=" " read -ra tokens <<< "${token}"
 
   for i in "${!tokens[@]}"; do
-    printf '%.*s' $((i != 0)) ","
+    [[ $i -ne 0 ]] && echo -n ","
 
     echo -n '{
     "content": "\"'"${tokens[$i]}"'\"",
