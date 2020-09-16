@@ -77,17 +77,29 @@ _MATCH() {
   fi
 }
 _RUN() {
+  if [[ -n "${SKIP_ALL:-}" ]]; then
+    _SKIP
+    return
+  fi
+
   IFS=" " read -ra args <<< "$1"
 
   out=$(./pdns_api.sh "${args[@]}" 2>&1)
   shift
   _MATCH "$out" "$@"
 }
+_SKIP() {
+   echo -e "\\t[$(_COLOR 34 SKIPPED)]"
+}
+_SKIP_ALL() {
+  export SKIP_ALL=1
+}
 _RELOAD_CONFIG() {
   source tests/config
   if [[ $# -gt 0 ]]; then
     export PDNS_VERSION="$1"
   fi
+  export SKIP_ALL=
 }
 
 # Run all tests
