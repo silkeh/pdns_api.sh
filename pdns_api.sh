@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2016-2018 - Silke Hofstra and contributors
+# Copyright 2016-2021 - Silke Hofstra and contributors
 #
 # Licensed under the EUPL
 #
@@ -364,18 +364,13 @@ soa_edit() {
 }
 
 exit_hook() {
+  # User defined exit hook script with multiple handles (see dehydrated/docs/examples/hook.sh)
   if [[ ! -z "${PDNS_EXIT_HOOK:-}" ]]; then
       if [[ -x "${PDNS_EXIT_HOOK}" ]]; then
-        exec "${PDNS_EXIT_HOOK}"
+        ${PDNS_EXIT_HOOK} "$@" # Execute user defined hook script, if exists and executable
       else
         fatalerror "${PDNS_EXIT_HOOK} is not an executable"
       fi
-  fi
-}
-
-deploy_cert() {
-  if [[ ! -z "${PDNS_DEPLOY_CERT_HOOK:-}" ]]; then
-    ${PDNS_DEPLOY_CERT_HOOK}
   fi
 }
 
@@ -388,7 +383,7 @@ main() {
 
   # Ignore unknown hooks
   if [[ ! "${hook}" =~ ^(deploy_challenge|clean_challenge|soa_edit|exit_hook|deploy_cert)$ ]]; then
-    exit 0
+    return 0
   fi
 
   # Main setup
@@ -401,20 +396,17 @@ main() {
   if [[ "${hook}" = "soa_edit" ]]; then
     shift
     soa_edit "$@"
-    exit 0
+    return $?
   fi
 
   # Interface for exit_hook
   if [[ "${hook}" = "exit_hook" ]]; then
-    shift
-    exit_hook "$@"
-    exit 0
+    return 0
   fi
 
   # Interface for deploy_cert
   if [[ "${hook}" = "deploy_cert" ]]; then
-    deploy_cert "$@"
-    exit 0
+    return 0
   fi
 
   declare -A domains
@@ -477,6 +469,9 @@ main() {
 
     sleep "${PDNS_WAIT}"
   fi
+
+  return
 }
 
 main "$@"
+exit_hook "$@"
