@@ -16,7 +16,7 @@ jobs:
       name: shellcheck
       script:
         - shellcheck --version
-        - shellcheck **/*.sh
+        - shellcheck *.sh tests/*.sh tests/**/*.sh tests/{curl,config}
 
     - name: bash:latest
       script: &bash
