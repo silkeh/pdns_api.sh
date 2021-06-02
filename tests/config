@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 export PDNS_HOST=hostname
 export PDNS_PORT=8000
 export PDNS_KEY=secretkey

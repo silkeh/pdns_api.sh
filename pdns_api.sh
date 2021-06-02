@@ -166,6 +166,7 @@ request() {
 
   # Perform the request
   # This is wrappend in an if to avoid the exit on error
+  # shellcheck disable=SC2086
   if ! res="$(curl ${PDNS_CURL_OPTS:-} -sSfL --stderr - --request "${method}" --header "${content_header}" --header "${api_header}" --data "${data}" "${url}")"; then
     error=true
   fi
@@ -364,7 +365,7 @@ soa_edit() {
 }
 
 exit_hook() {
-  if [[ ! -z "${PDNS_EXIT_HOOK:-}" ]]; then
+  if [[ -n "${PDNS_EXIT_HOOK:-}" ]]; then
       if [[ -x "${PDNS_EXIT_HOOK}" ]]; then
         exec "${PDNS_EXIT_HOOK}"
       else
@@ -374,7 +375,7 @@ exit_hook() {
 }
 
 deploy_cert() {
-  if [[ ! -z "${PDNS_DEPLOY_CERT_HOOK:-}" ]]; then
+  if [[ -n "${PDNS_DEPLOY_CERT_HOOK:-}" ]]; then
     ${PDNS_DEPLOY_CERT_HOOK}
   fi
 }
