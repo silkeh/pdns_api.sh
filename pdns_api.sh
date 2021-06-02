@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2016-2018 - Silke Hofstra and contributors
+# Copyright 2016-2021 - Silke Hofstra and contributors
 #
 # Licensed under the EUPL
 #
@@ -149,9 +149,9 @@ load_zones() {
   fi
 
   # Load zones
-  all_zones=""
+  all_zones=()
   if [[ -n "${PDNS_ZONES_TXT:-}" ]] && [[ -f "${PDNS_ZONES_TXT}" ]]; then
-    all_zones="$(cat "${PDNS_ZONES_TXT}")"
+    mapfile -t all_zones < "${PDNS_ZONES_TXT}"
   fi
 }
 
@@ -229,17 +229,17 @@ setup() {
   url="${url}/servers/${PDNS_SERVER}/zones"
 
   # Get a zone list from the API is none was set
-  if [[ -z "${all_zones}" ]]; then
+  if [[ ${#all_zones[@]} -eq 0 ]]; then
     request "GET" "${url}" ""
-    all_zones="$(<<< "${res//, /$',\n'}" get_json_string_value name)"
+    mapfile -t all_zones < <(<<< "${res//, /$',\n'}" get_json_string_value name)
   fi
 
   # Strip trailing dots from zones
-  all_zones="${all_zones//$'.\n'/ }"
-  all_zones="${all_zones%.}"
+  all_zones=("${all_zones[@]//$'.\n'/ }")
+  all_zones=("${all_zones[@]%.}")
 
   # Sort zones to list most specific first
-  all_zones="$(<<< "${all_zones}" rev | sort | rev)"
+  mapfile -t all_zones < <(printf '%s\n' "${all_zones[@]}" | rev | sort | rev)
 
   # Set suffix in case of CNAME redirection
   if [[ -n "${PDNS_SUFFIX:-}" ]]; then
@@ -252,7 +252,7 @@ setup() {
   debug "# Setup"
   debug "API version: ${PDNS_VERSION}"
   debug "PDNS server: ${PDNS_SERVER}"
-  debug "Zones: ${all_zones}"
+  debug "Zones: $(printf '%s ' "${all_zones[@]}")"
   debug "Suffix: \"${suffix}\""
 }
 
@@ -269,7 +269,7 @@ setup_domain() {
   IFS='.' read -ra name_array <<< "${name}"
 
   # Find zone name, cut off subdomains until match
-  for check_zone in ${all_zones}; do
+  for check_zone in "${all_zones[@]}"; do
     for (( j=${#name_array[@]}-1; j>=0; j-- )); do
       if [[ "${check_zone}" = "$(join . "${name_array[@]:j}")" ]]; then
         zone="${check_zone}"
