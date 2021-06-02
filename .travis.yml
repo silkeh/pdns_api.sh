@@ -40,3 +40,6 @@ jobs:
 
     - name: bash:5.0
       script: *bash
+
+    - name: bash:5.1
+      script: *bash
