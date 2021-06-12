@@ -20,6 +20,7 @@ jobs:
 
     - name: bash:latest
       script: &bash
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
         - docker pull "$TRAVIS_JOB_NAME"
         - docker run -v "$PWD:/mnt" "$TRAVIS_JOB_NAME" /mnt/test.sh
 
