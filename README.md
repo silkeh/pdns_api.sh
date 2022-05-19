@@ -55,6 +55,21 @@ Usage:
 pdns_api.sh soa_edit <zone> [soa-edit] [soa-edit-api]
 ```
 
+## Hook chaining
 
-[dehydrated]: https://github.com/lukas2511/dehydrated
-[SOA-EDIT]:   https://doc.powerdns.com/authoritative/dnssec/operational.html#soa-edit-ensure-signature-freshness-on-slaves
+`pdns_api.sh` has limited support for chaining hooks.
+This can be used to, for example, reload your webserver or execute your own script.
+
+Note that arguments passed to `pdns_api.sh` are not passed to the hook, and complex scripting is not supported.
+Extend the [example hook] with a call to `pdns_api.sh "$@"` for anything more complex than reloading service or calling a script.
+
+The hooks are available for `deploy_cert` and `exit_hook`, for example:
+
+```
+PDNS_DEPLOY_CERT_HOOK="/bin/systemctl reload nginx"
+PDNS_EXIT_HOOK="/usr/local/bin/my-dehydrated-script.sh"
+```
+
+[dehydrated]:   https://github.com/dehydrated-io/dehydrated
+[example hook]: https://github.com/dehydrated-io/dehydrated/blob/master/docs/examples/hook.sh
+[SOA-EDIT]:     https://doc.powerdns.com/authoritative/dnssec/operational.html#soa-edit-ensure-signature-freshness-on-slaves
