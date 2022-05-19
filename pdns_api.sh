@@ -366,17 +366,13 @@ soa_edit() {
 
 exit_hook() {
   if [[ -n "${PDNS_EXIT_HOOK:-}" ]]; then
-      if [[ -x "${PDNS_EXIT_HOOK}" ]]; then
-        exec "${PDNS_EXIT_HOOK}"
-      else
-        fatalerror "${PDNS_EXIT_HOOK} is not an executable"
-      fi
+    exec ${PDNS_EXIT_HOOK}
   fi
 }
 
 deploy_cert() {
   if [[ -n "${PDNS_DEPLOY_CERT_HOOK:-}" ]]; then
-    ${PDNS_DEPLOY_CERT_HOOK}
+    exec ${PDNS_DEPLOY_CERT_HOOK}
   fi
 }
 
