@@ -21,6 +21,7 @@ set -euo pipefail
 # Settings for the test
 export DEBUG=
 export CONFIG="/dev/null"
+export LC_ALL="C"
 
 # Override commands
 export PATH="tests:$PATH"
@@ -77,6 +78,8 @@ _MATCH() {
   fi
 }
 _RUN() {
+  [[ -z "${EXP_EXIT:-}" ]] && local EXP_EXIT=0
+
   if [[ -n "${SKIP_ALL:-}" ]]; then
     _SKIP
     return
@@ -84,7 +87,7 @@ _RUN() {
 
   IFS=" " read -ra args <<< "$1"
 
-  out=$(./pdns_api.sh "${args[@]}" 2>&1)
+  out=$(./pdns_api.sh "${args[@]}" 2>&1 || echo exit=$?)
   shift
   _MATCH "$out" "$@"
 }
