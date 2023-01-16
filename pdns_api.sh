@@ -228,7 +228,7 @@ setup() {
   # Zone endpoint on the API
   url="${url}/servers/${PDNS_SERVER}/zones"
 
-  # Get a zone list from the API is none was set
+  # Get a zone list from the API if none was set
   if [[ ${#all_zones[@]} -eq 0 ]]; then
     request "GET" "${url}" ""
     mapfile -t all_zones < <(<<< "${res//, /$',\n'}" get_json_string_value name)
