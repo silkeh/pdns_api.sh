@@ -466,9 +466,12 @@ main() {
   # Perform requests
   for zone in "${!requests[@]}"; do
     request "PATCH" "${url}/${zone}" '{"rrsets": ['"${requests[${zone}]}"']}'
-    if [[ -z "${PDNS_NO_NOTIFY:-}" ]]; then
+    local noCaseMatch=$(shopt -p nocasematch)
+    shopt -s nocasematch
+    if [[ -z "${PDNS_NO_NOTIFY:-}" || "${PDNS_NO_NOTIFY}" =~ "no|false" ]]; then
       request "PUT" "${url}/${zone}/notify" ''
     fi
+    $noCaseMatch
   done
 
   # Wait the requested amount of seconds when deployed
