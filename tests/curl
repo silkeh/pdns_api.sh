@@ -35,7 +35,7 @@ done
 >&2 echo -e "${method} ${url}\n${data}"
 
 base_url="http://${PDNS_HOST}:${PDNS_PORT}/"
-fixture="$(dirname "$0")/responses/${url#$base_url}_${method}.json"
+fixture="$(dirname "$0")/responses/${url#"$base_url"}_${method}.json"
 if [ -e "${fixture}" ]
 then
     cat "${fixture}"
