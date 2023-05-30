@@ -1,0 +1,29 @@
+---
+stages:
+  - lint
+  - test
+
+shellcheck:
+  stage: lint
+  image: registry.gitlab.com/pipeline-components/shellcheck:latest
+  script:
+    - shellcheck --version
+    - shellcheck *.sh tests/*.sh tests/**/*.sh tests/{curl,config}
+
+bash:
+  stage: test
+  needs: []
+  image: bash:$BASH_VERSION
+  script:
+    - ./test.sh
+  parallel:
+    matrix:
+      - BASH_VERSION:
+          - '4.0'
+          - '4.1'
+          - '4.2'
+          - '4.3'
+          - '4.4'
+          - '5.0'
+          - '5.1'
+          - '5.2'
