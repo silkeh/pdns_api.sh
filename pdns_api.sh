@@ -103,8 +103,10 @@ load_config() {
     if [[ -n "${ZSH_VERSION:-}" ]]
     then
       set +o noglob
+      setopt null_glob
     else
       set +f
+      shopt -s nullglob
     fi
 
     for check_config_d in "${CONFIG_D}"/*.sh; do
@@ -121,8 +123,10 @@ load_config() {
     if [[ -n "${ZSH_VERSION:-}" ]]
     then
       set -o noglob
+      setopt no_null_glob
     else
       set -f
+      shopt -u nullglob
     fi
   fi
 
