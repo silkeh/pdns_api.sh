@@ -466,9 +466,10 @@ main() {
   # Perform requests
   for zone in "${!requests[@]}"; do
     request "PATCH" "${url}/${zone}" '{"rrsets": ['"${requests[${zone}]}"']}'
-    local noCaseMatch=$(shopt -p nocasematch)
+    local noCaseMatch
+    noCaseMatch=$(shopt -p nocasematch)
     shopt -s nocasematch
-    if [[ -z "${PDNS_NO_NOTIFY:-}" || "${PDNS_NO_NOTIFY}" =~ "no|false" ]]; then
+    if [[ -z "${PDNS_NO_NOTIFY:-}" || "${PDNS_NO_NOTIFY}" =~ no|false ]]; then
       request "PUT" "${url}/${zone}/notify" ''
     fi
     $noCaseMatch
